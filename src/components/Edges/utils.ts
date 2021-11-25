@@ -83,7 +83,13 @@ export function getBezierPath({
   let path = `M${sourceX},${sourceY} C${sourceX},${cY} ${targetX},${cY} ${targetX},${targetY}`
 
   if (leftAndRight.includes(sourcePosition) && leftAndRight.includes(targetPosition)) {
-    path = `M${sourceX},${sourceY} C${cX},${sourceY} ${cX},${targetY} ${targetX},${targetY}`
+    const dx = targetX - sourceX
+    if (dx < 10) {
+      const offsetCX = -(dx - 10)
+      path = `M${sourceX},${sourceY} C${cX + offsetCX},${sourceY} ${cX - offsetCX},${targetY} ${targetX},${targetY}`
+    } else {
+      path = `M${sourceX},${sourceY} C${cX},${sourceY} ${cX},${targetY} ${targetX},${targetY}`
+    }
   } else if (leftAndRight.includes(targetPosition)) {
     path = `M${sourceX},${sourceY} Q${sourceX},${targetY} ${sourceX},${targetY} ${targetX},${targetY}`
   } else if (leftAndRight.includes(sourcePosition)) {
