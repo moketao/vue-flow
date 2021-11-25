@@ -1,0 +1,7 @@
+.vue-flow__controls{
+  display: flex;
+  flex-direction: row;
+  bottom: unset;
+  left: 10px;
+  top: 10px;
+}

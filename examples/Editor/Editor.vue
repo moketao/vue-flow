@@ -16,6 +16,8 @@ import {
   FlowElement,
   Background,
 } from '~/index'
+import './editor.css'
+
 
 const onNodeDragStop = (e) => console.log('drag stop', e)
 const onElementClick = (e) => console.log('click', e)
@@ -24,14 +26,14 @@ const elements = ref<Elements>([
     id: '1',
     type: 'input',
     data: { label: 'Node 1' },
-    position: { x: 50, y: 5 },
+    position: { x: 50, y: 155 },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
   },
   {
     id: '2',
     data: { label: 'Node 2' },
-    position: { x: 350, y: -100 },
+    position: { x: 350, y: 50 },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
   },
@@ -45,13 +47,16 @@ const elements = ref<Elements>([
   {
     id: '4',
     data: { label: 'Node 4' },
-    position: { x: 400, y: 200 },
+    position: { x: 350, y: 150 },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
   },
   { id: 'e1-2', source: '1', target: '2', animated: true, style: { strokeWidth: 3 } },
   { id: 'e1-3', source: '1', target: '3', arrowHeadType: ArrowHeadType.ArrowClosed },
 ])
+
+window['elements'] = elements
+
 const vfInstance = ref<FlowInstance>()
 const onElementsRemove = (elementsToRemove: Elements) => (elements.value = removeElements(elementsToRemove, elements.value))
 const onConnect = (params: Edge | Connection) => (elements.value = addEdge(params, elements.value))
@@ -64,8 +69,8 @@ const updatePos = () => {
   elements.value = elements.value.map((el) => {
     if (isNode(el)) {
       el.position = {
-        x: Math.random() * 400,
-        y: Math.random() * 400,
+        x: Math.random() * 200,
+        y: Math.random() * 200,
       }
     }
     return el
@@ -86,10 +91,9 @@ const toggleclasss = () => {
   <VueFlow
     v-model="elements"
     class="vue-flow-basic-example"
-    :default-zoom="1.5"
+    :default-zoom="1"
     :min-zoom="0.2"
     :max-zoom="4"
-    :zoom-on-scroll="false"
     @elements-remove="onElementsRemove"
     @connect="onConnect"
     @node-drag-stop="onNodeDragStop"
