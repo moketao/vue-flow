@@ -5,3 +5,6 @@
   left: 10px;
   top: 10px;
 }
+.flowEditor__controls{
+  z-index: 6;
+}

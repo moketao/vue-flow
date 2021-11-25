@@ -1,0 +1,6 @@
+.EditorControls{
+    position: absolute; z-index: 6;
+}
+.EditorControls .n-button{
+    margin: 5px;
+}

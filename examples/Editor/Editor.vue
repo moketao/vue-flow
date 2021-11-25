@@ -12,12 +12,11 @@ import {
   removeElements,
   VueFlow,
   MiniMap,
-  Controls,
   FlowElement,
   Background,
-} from '~/index'
+} from '../../src/index'
 import './editor.css'
-
+import Controls from './Controls.vue'
 
 const onNodeDragStop = (e) => console.log('drag stop', e)
 const onElementClick = (e) => console.log('click', e)
@@ -58,8 +57,9 @@ const elements = ref<Elements>([
 window['elements'] = elements
 
 const vfInstance = ref<FlowInstance>()
+const onConnect = (params: Connection | Edge) => (elements.value = addEdge(params, elements.value))
 const onElementsRemove = (elementsToRemove: Elements) => (elements.value = removeElements(elementsToRemove, elements.value))
-const onConnect = (params: Edge | Connection) => (elements.value = addEdge(params, elements.value))
+const onRestore = (els: Elements) => (elements.value = els)
 const onLoad = (flowInstance: FlowInstance) => {
   flowInstance.fitView({ padding: 0.1 })
   vfInstance.value = flowInstance
@@ -98,6 +98,7 @@ const toggleclasss = () => {
     @connect="onConnect"
     @node-drag-stop="onNodeDragStop"
     @node-click="onElementClick"
+    storage-key="vue-flow-123"
     @load="onLoad"
   >
     <MiniMap />

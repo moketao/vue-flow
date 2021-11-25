@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import BarcodeOutlined from '@sicons/antd/BarcodeOutlined.svg'
 import { FitViewParams } from '../../types'
 import { useZoomPanHelper, useStore } from '../../composables'
 import ControlButton from './ControlButton.vue'
@@ -99,13 +98,6 @@ export default {
         </slot>
         <slot name="icon-lock">
           <Lock v-if="!isInteractive" />
-        </slot>
-      </ControlButton>
-    </slot>
-    <slot name="control-line-width">
-      <ControlButton v-if="props.showLineWidth" class="vue-flow__controls-interactive" @click="onLineWidthHandler">
-        <slot name="icon-unlock">
-          <BarcodeOutlined />
         </slot>
       </ControlButton>
     </slot>

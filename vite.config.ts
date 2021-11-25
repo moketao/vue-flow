@@ -6,12 +6,15 @@ import AutoImport from 'unplugin-auto-import/vite'
 import replace from '@rollup/plugin-replace'
 import copy from 'rollup-plugin-copy'
 import pkg from './package.json'
+import vueJsx from "@vitejs/plugin-vue-jsx";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: './',
   resolve: {
     alias: {
       '~': resolve('src'),
+      '@': resolve('src'),
     },
     dedupe: ['vue'],
     extensions: ['.ts', '.vue'],
@@ -40,6 +43,7 @@ export default defineConfig({
   },
   plugins: [
     vue(),
+    vueJsx(),
     svgLoader(), // https://github.com/antfu/unplugin-auto-import
     AutoImport({
       imports: ['vue', '@vueuse/core'],
