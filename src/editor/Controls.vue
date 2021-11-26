@@ -1,13 +1,14 @@
 <script lang="ts" setup>
-import { useZoomPanHelper, FlowExportObject, Node, useVueFlow ,Position} from '../../src/index'
+import { useZoomPanHelper, FlowExportObject, Node, useVueFlow ,Position} from '../index'
 import { NIcon, NSpace, NCard, NButton, NTooltip} from 'naive-ui'
 import { SaveTwotone } from '@vicons/antd'
 import { RestoreTwotone } from '@vicons/material'
 import { Add16Filled } from '@vicons/fluent'
+import { Clean } from '@vicons/carbon'
 import ControlBtn from './ControlBtn.vue'
 import './controls.css'
 
-const flowKey = 'example-flow'
+const flowKey = 'example-flow2'
 const state = useStorage(flowKey, {
   elements: [],
   position: [NaN, NaN],
@@ -22,14 +23,15 @@ const flow = useVueFlow()
 const emit = defineEmits(['restore', 'add'])
 
 const onSave = () => {
-  let ob = flow.instance.toObject();
-  console.log(ob);
-  if (flow.instance) state.value = ob
+  console.log('save');
+  if (flow.instance) {
+    state.value = flow.instance.toObject()
+  }
 }
 
 const onRestore = () => {
   const flow: FlowExportObject | null = state.value
-
+  console.log('onRestore');
   if (flow) {
     const [x = 0, y = 0] = flow.position
     emit('restore', flow.elements ?? [])
@@ -41,19 +43,28 @@ const onAdd = () => {
   const newNode = {
     id: `random_node-${getNodeId()}`,
     data: { label: 'Added node' },
-    position: { x: Math.random() * window.innerWidth - 100, y: Math.random() * window.innerHeight },
+    position: { x: Math.random() * (window.innerWidth - 200)+100, y: Math.random() * (window.innerHeight - 200)+100 },
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
   } as Node
   flow.addElements([newNode])
 }
 
+function onClean(){
+  if (flow) {
+    flow.setElements([],true);
+  }
+}
 const iconSave = ()=>h(SaveTwotone);
+const iconRestoreTwotone = ()=>h(RestoreTwotone);
+const iconAdd16Filled = ()=>h(Add16Filled);
+const iconClean = ()=>h(Clean);
 </script>
 <template>
   <div class="EditorControls">
-    <ControlBtn tip='保存' :icon="iconSave" />
-    <n-button><n-icon size="22" @click="onRestore"><RestoreTwotone /></n-icon></n-button>
-    <n-button><n-icon size="22" @click="onAdd"><Add16Filled /></n-icon></n-button>
+    <ControlBtn tip='保存' :icon="iconSave" @click="onSave" />
+    <ControlBtn tip='恢复' :icon="iconRestoreTwotone" @click="onRestore" />
+    <ControlBtn tip='添加' :icon="iconAdd16Filled" @click="onAdd" />
+    <ControlBtn tip='清空' :icon="iconClean" @click="onClean" />
   </div>
 </template>

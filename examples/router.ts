@@ -15,7 +15,7 @@ export const routes: RouterOptions['routes'] = [
   },
   {
     path: '/editor',
-    component: () => import('./Editor/Editor.vue'),
+    component: () => import('./Editor/EditorTest.vue'),
   },
   {
     path: '/custom-connectionline',

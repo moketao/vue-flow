@@ -1,0 +1,21 @@
+.vue-flow__controls{
+  display: flex;
+  flex-direction: row;
+  bottom: unset;
+  left: 10px;
+  top: 10px;
+}
+.flowEditor__controls{
+  z-index: 6;
+}
+.save__controls {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 4;
+  font-size: 12px;
+}
+
+.save__controls button {
+  margin-left: 5px;
+}

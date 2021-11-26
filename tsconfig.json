@@ -37,6 +37,8 @@
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.tsx",
+    "examples/**/*.tsx",
+    "examples/**/*.vue",
     "src/**/*.vue",
     "vite.config.ts"
   ],
@@ -44,6 +46,5 @@
     "node_modules",
     "build",
     "dist",
-    "examples"
   ]
 }

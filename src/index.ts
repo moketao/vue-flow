@@ -1,5 +1,6 @@
 export { default as VueFlow } from './container/VueFlow/VueFlow.vue'
 export { default as Handle } from './components/Handle/Handle.vue'
+export { default as Editor } from './editor/Editor.vue'
 export * from './components/Edges'
 export * from './components/Nodes'
 export { getBezierPath, getSmoothStepPath, getMarkerEnd, getCenter as getEdgeCenter } from './components/Edges/utils'
