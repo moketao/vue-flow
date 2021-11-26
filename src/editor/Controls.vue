@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { useZoomPanHelper, FlowExportObject, Node, useVueFlow ,Position} from '../index'
+import { useZoomPanHelper, FlowExportObject, Node, useVueFlow, Position, ArrowHeadType } from "../index";
 import { NIcon, NSpace, NCard, NButton, NTooltip} from 'naive-ui'
-import { SaveTwotone } from '@vicons/antd'
+import { SaveTwotone, BarcodeOutlined } from '@vicons/antd'
 import { RestoreTwotone } from '@vicons/material'
 import { Add16Filled } from '@vicons/fluent'
 import { Clean } from '@vicons/carbon'
@@ -20,12 +20,15 @@ const getNodeId = () => `randomnode_${+new Date()}`
 const { transform } = useZoomPanHelper()
 
 const flow = useVueFlow()
-const emit = defineEmits(['restore', 'add'])
+const emit = defineEmits(['restore', 'add','lineWidth'])
 
 const onSave = () => {
   console.log('save');
   if (flow.instance) {
-    state.value = flow.instance.toObject()
+    let inst = flow.instance;
+    let ob = inst.toObject();
+    console.log(ob);
+    state.value = ob;
   }
 }
 
@@ -59,6 +62,7 @@ const iconSave = ()=>h(SaveTwotone);
 const iconRestoreTwotone = ()=>h(RestoreTwotone);
 const iconAdd16Filled = ()=>h(Add16Filled);
 const iconClean = ()=>h(Clean);
+const iconBarcodeOutlined = ()=>h(BarcodeOutlined);
 </script>
 <template>
   <div class="EditorControls">
@@ -66,5 +70,6 @@ const iconClean = ()=>h(Clean);
     <ControlBtn tip='恢复' :icon="iconRestoreTwotone" @click="onRestore" />
     <ControlBtn tip='添加' :icon="iconAdd16Filled" @click="onAdd" />
     <ControlBtn tip='清空' :icon="iconClean" @click="onClean" />
+    <ControlBtn tip='粗细' :icon="iconBarcodeOutlined" @click="emit('lineWidth')" />
   </div>
 </template>
