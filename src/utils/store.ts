@@ -1,17 +1,4 @@
-import { isEdge, isNode, parseEdge, parseNode } from './graph'
-import {
-  ConnectionMode,
-  Elements,
-  FlowState,
-  NextElements,
-  NodeExtent,
-  GraphNode,
-  PanOnScrollMode,
-  Node,
-  Edge,
-  DefaultNodeTypes,
-  DefaultEdgeTypes,
-} from '~/types'
+import { ConnectionMode, FlowState, PanOnScrollMode, DefaultNodeTypes, DefaultEdgeTypes } from '~/types'
 import { DefaultNode, InputNode, OutputNode, BezierEdge, SmoothStepEdge, StepEdge, StraightEdge } from '~/components'
 import { createHooks } from '~/composables'
 
@@ -35,8 +22,8 @@ export const initialState = (): FlowState => ({
   },
   transform: [0, 0, 1],
   elements: [],
-  nodes: [],
-  edges: [],
+  nodeTypes: [],
+  edgeTypes: [],
   selectedElements: undefined,
   selectedNodesBbox: { x: 0, y: 0, width: 0, height: 0 },
 
@@ -99,92 +86,3 @@ export const initialState = (): FlowState => ({
 
   vueFlowVersion: typeof __VUE_FLOW_VERSION__ !== 'undefined' ? __VUE_FLOW_VERSION__ : '-',
 })
-
-export const parseElements = async (elements: Elements, nodes: Node[], edges: Edge[], nodeExtent: NodeExtent) =>
-  new Promise<NextElements>((resolve) => {
-    const { nextEdges, nextNodes }: NextElements = {
-      nextNodes: [],
-      nextEdges: [],
-    }
-    for (const element of elements) {
-      if (isNode(element)) {
-        const storeNode = nodes[nodes.map((x) => x.id).indexOf(element.id)]
-
-        if (storeNode) {
-          const updatedNode = {
-            ...storeNode,
-            ...element,
-          } as GraphNode
-          updatedNode.__vf!.position = element.position
-
-          if (typeof element.type !== 'undefined' && element.type !== storeNode.type) {
-            // we reset the elements dimensions here in order to force a re-calculation of the bounds.
-            // When the type of a node changes it is possible that the number or positions of handles changes too.
-            updatedNode.__vf!.width = 0
-          }
-
-          nextNodes.push(updatedNode)
-        } else {
-          nextNodes.push(parseNode(element, nodeExtent))
-        }
-      } else if (isEdge(element)) {
-        const storeEdge = edges[edges.map((x) => x.id).indexOf(element.id)]
-
-        if (storeEdge) {
-          nextEdges.push({
-            ...storeEdge,
-            ...element,
-          })
-        } else {
-          nextEdges.push(parseEdge(element))
-        }
-      }
-    }
-    resolve({ nextEdges, nextNodes })
-  })
-
-const isObject = (val: any) => val !== null && typeof val === 'object'
-const isArray = Array.isArray
-
-const smartUnref = (val: any) => {
-  if (val !== null && !isRef(val) && typeof val === 'object') {
-    // eslint-disable-next-line no-use-before-define
-    return deepUnref(val)
-  }
-
-  return unref(val)
-}
-
-const unrefArray = (arr: any[]) => {
-  const unreffed: any[] = []
-
-  arr.forEach((val) => {
-    unreffed.push(smartUnref(val))
-  })
-
-  return unreffed
-}
-
-const unrefObject = (obj: Record<string, any>) => {
-  const unreffed: Record<string, any> = {}
-
-  Object.keys(obj).forEach((key) => {
-    unreffed[key] = smartUnref(obj[key])
-  })
-
-  return unreffed
-}
-
-export const deepUnref = (val: any) => {
-  const checkedVal = isRef(val) ? unref(val) : val
-
-  if (!isObject(checkedVal)) {
-    return checkedVal
-  }
-
-  if (isArray(checkedVal)) {
-    return unrefArray(checkedVal)
-  }
-
-  return unrefObject(checkedVal)
-}

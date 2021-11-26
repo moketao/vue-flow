@@ -21,8 +21,7 @@ export interface FlowEvents {
   connect: Connection
   connectStart: {
     event: MouseEvent
-    params: OnConnectStartParams
-  }
+  } & { [key in keyof OnConnectStartParams]: OnConnectStartParams[key] }
   connectStop: MouseEvent
   connectEnd: MouseEvent
   load: FlowInstance
@@ -45,7 +44,7 @@ export interface FlowEvents {
   edgeDoubleClick: { event: MouseEvent; edge: GraphEdge }
   edgeClick: { event: MouseEvent; edge: GraphEdge }
   edgeUpdateStart: { event: MouseEvent; edge: GraphEdge }
-  edgeUpdateEnd: MouseEvent
+  edgeUpdateEnd: { event: MouseEvent; edge: GraphEdge }
 }
 
 export type FlowHooks = { [key in keyof FlowEvents]: FlowHook<FlowEvents[key]> }

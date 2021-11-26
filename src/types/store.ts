@@ -12,7 +12,7 @@ import {
   Transform,
   XYPosition,
 } from './flow'
-import { HandleType } from './components'
+import { HandleType, EdgeComponent, NodeComponent } from './components'
 import {
   ConnectionMode,
   OnConnectEndFunc,
@@ -21,17 +21,16 @@ import {
   OnConnectStopFunc,
   SetConnectionId,
 } from './connection'
-import { Edge, EdgeComponent, GraphEdge } from './edge'
-import { NodeComponent, NodeDiffUpdate, NodeDimensionUpdate, NodeExtent, GraphNode, NodePosUpdate, TranslateExtent } from './node'
+import { GraphEdge } from './edge'
+import { NodeExtent, GraphNode, TranslateExtent } from './node'
 import { D3Selection, D3Zoom, D3ZoomHandler, InitD3ZoomPayload } from './zoom'
 import { FlowHooks } from './hooks'
 
-export interface FlowState extends FlowOptions {
+export interface FlowState extends Omit<FlowOptions, 'elements'> {
+  hooks: FlowHooks
+  instance?: FlowInstance
+
   elements: FlowElements
-  nodes: GraphNode[]
-  edges: Edge[]
-  selectedElements?: FlowElements
-  selectedNodesBbox: Rect
 
   d3Zoom?: D3Zoom
   d3Selection?: D3Selection
@@ -43,6 +42,8 @@ export interface FlowState extends FlowOptions {
   dimensions: Dimensions
   transform: Transform
 
+  selectedElements?: FlowElements
+  selectedNodesBbox?: Rect
   nodesSelectionActive: boolean
   selectionActive: boolean
   userSelectionRect: SelectionRect
@@ -67,17 +68,12 @@ export interface FlowState extends FlowOptions {
   onConnectEnd?: OnConnectEndFunc
 
   isReady: boolean
-  hooks: FlowHooks
-  instance?: FlowInstance
 
   vueFlowVersion: string
 }
 
 export interface FlowActions {
-  setElements: (elements: Elements) => Promise<void>
-  updateNodeDimensions: (update: NodeDimensionUpdate) => void
-  updateNodePos: (payload: NodePosUpdate) => void
-  updateNodePosDiff: (payload: NodeDiffUpdate) => void
+  setElements: (elements: Elements, init?: boolean) => Promise<void>
   setUserSelection: (mousePos: XYPosition) => void
   updateUserSelection: (mousePos: XYPosition) => void
   unsetUserSelection: () => void
@@ -92,7 +88,8 @@ export interface FlowActions {
   updateSize: (size: Dimensions) => void
   setConnectionNodeId: (payload: SetConnectionId) => void
   setInteractive: (isInteractive: boolean) => void
-  addElements: (elements: Elements) => Promise<void>
+  addElements: (elements: Elements) => void
+  setState: (state: FlowOptions) => void
 }
 
 export interface FlowGetters {
@@ -100,6 +97,7 @@ export interface FlowGetters {
   getNodeTypes: () => Record<string, NodeComponent>
   getNodes: () => GraphNode[]
   getEdges: () => GraphEdge[]
+  getSelectedNodes: () => GraphNode[]
 }
 
 export type FlowStore = Store<string, FlowState, FlowGetters, FlowActions>

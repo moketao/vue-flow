@@ -1,21 +1,18 @@
 import microDiff from 'microdiff'
 import { setActivePinia, createPinia, defineStore, StoreDefinition, acceptHMRUpdate } from 'pinia'
-import { FlowState, Node, FlowActions, Elements, FlowGetters, GraphNode, NextElements, GraphEdge } from '~/types'
+import { FlowState, FlowActions, Elements, FlowGetters, GraphNode, GraphEdge } from '~/types'
 import {
-  clampPosition,
-  getDimensions,
   getConnectedEdges,
   getNodesInside,
   getRectOfNodes,
-  parseElements,
   defaultNodeTypes,
   defaultEdgeTypes,
-  deepUnref,
-  getHandleBounds,
   isGraphNode,
   getSourceTargetNodes,
+  isEdge,
+  parseElements,
+  processElements,
 } from '~/utils'
-import parseElementsWorker from '~/workers/parseElements'
 
 const pinia = createPinia()
 
@@ -42,150 +39,58 @@ export default (id: string, preloadedState: FlowState) => {
         this.nodeTypes?.forEach((n) => (nodeTypes[n] = n))
         return nodeTypes
       },
-      getNodes(): Node[] {
-        const n = this.onlyRenderVisibleElements
-          ? this.nodes &&
-            getNodesInside(
-              this.nodes,
-              {
-                x: 0,
-                y: 0,
-                width: this.dimensions.width,
-                height: this.dimensions.height,
-              },
-              this.transform,
-              true,
-            )
-          : this.nodes
-
-        return n.filter((node) => !node.isHidden)
+      getNodes(): GraphNode[] {
+        if (this.isReady) {
+          const nodes = this.elements.filter((n) => isGraphNode(n) && !n.isHidden) as GraphNode[]
+          return this.onlyRenderVisibleElements
+            ? nodes &&
+                getNodesInside(
+                  nodes,
+                  {
+                    x: 0,
+                    y: 0,
+                    width: this.dimensions.width,
+                    height: this.dimensions.height,
+                  },
+                  this.transform,
+                  true,
+                )
+            : nodes ?? []
+        }
+        return []
       },
       getEdges(): GraphEdge[] {
-        return this.edges
-          .filter((edge) => !edge.isHidden)
-          .map((edge) => {
-            const { sourceNode, targetNode } = getSourceTargetNodes(edge, this.getNodes)
-            if (!sourceNode) console.warn(`couldn't create edge for source id: ${edge.source}; edge id: ${edge.id}`)
-            if (!targetNode) console.warn(`couldn't create edge for target id: ${edge.target}; edge id: ${edge.id}`)
+        const edges = this.elements.filter((e) => isEdge(e) && !e.isHidden) as GraphEdge[]
+        if (this.isReady) {
+          return (
+            edges
+              .map((edge) => {
+                const { sourceNode, targetNode } = getSourceTargetNodes(edge, this.getNodes)
+                if (!sourceNode) console.warn(`couldn't create edge for source id: ${edge.source}; edge id: ${edge.id}`)
+                if (!targetNode) console.warn(`couldn't create edge for target id: ${edge.target}; edge id: ${edge.id}`)
 
-            return {
-              ...edge,
-              sourceTargetNodes: {
-                sourceNode,
-                targetNode,
-              },
-            }
-          })
-          .filter(({ sourceTargetNodes: { sourceNode, targetNode } }) => !!(sourceNode && targetNode))
+                return {
+                  ...edge,
+                  sourceNode,
+                  targetNode,
+                }
+              })
+              .filter(({ sourceNode, targetNode }) => !!(sourceNode && targetNode)) ?? []
+          )
+        }
+        return []
+      },
+      getSelectedNodes(): GraphNode[] {
+        return this.selectedElements?.filter(isGraphNode) ?? []
       },
     },
     actions: {
-      async setElements(elements) {
-        let next: NextElements = {
-          nextEdges: [],
-          nextNodes: [],
-        }
-        if (!this.worker || import.meta.env.SSR || typeof window === 'undefined') {
-          next = await parseElements(elements, this.nodes, this.edges, this.nodeExtent)
-        } else if (this.worker) {
-          const { workerFn, workerTerminate } = parseElementsWorker()
-          const res = await workerFn(
-            deepUnref(elements),
-            deepUnref(this.nodes),
-            deepUnref(this.edges),
-            deepUnref(this.nodeExtent),
-          ).catch((err) => {
-            console.error(err)
-            workerTerminate('ERROR')
-          })
-          if (res) {
-            workerTerminate('SUCCESS')
-            next = res
-          } else next = await parseElements(elements, this.nodes, this.edges, this.nodeExtent)
-        } else {
-          next = await parseElements(elements, this.nodes, this.edges, this.nodeExtent)
-        }
-        this.elements = [...next.nextNodes, ...next.nextEdges]
-        this.nodes = next.nextNodes ?? []
-        this.edges = next.nextEdges ?? []
-      },
-      updateNodeDimensions({ id, nodeElement, forceUpdate }) {
-        const i = this.nodes.map((x) => x.id).indexOf(id)
-        const node = this.nodes[i]
-        const dimensions = getDimensions(nodeElement)
-
-        const doUpdate =
-          dimensions.width &&
-          dimensions.height &&
-          (node.__vf?.width !== dimensions.width || node.__vf?.height !== dimensions.height || forceUpdate)
-
-        if (doUpdate) {
-          const handleBounds = getHandleBounds(nodeElement, this.transform[2])
-
-          this.nodes.splice(i, 1, {
-            ...node,
-            __vf: {
-              ...node.__vf,
-              ...dimensions,
-              handleBounds,
-            },
-          })
-        }
-      },
-      updateNodePos({ id, pos }) {
-        const i = this.nodes.map((x) => x.id).indexOf(id)
-        const node = this.nodes[i]
-
-        if (this.snapToGrid) {
-          const [gridSizeX, gridSizeY] = this.snapGrid
-          pos = {
-            x: gridSizeX * Math.round(pos.x / gridSizeX),
-            y: gridSizeY * Math.round(pos.y / gridSizeY),
-          }
-        }
-
-        this.nodes.splice(i, 1, {
-          ...node,
-          __vf: {
-            ...node.__vf,
-            position: pos,
-          },
+      async setElements(elements, force = true) {
+        const { nodes, edges } = parseElements(elements, this.elements, this.nodeExtent)
+        if (force) this.elements = []
+        await processElements([...nodes, ...edges], (processed) => {
+          this.elements = [...this.elements, ...processed]
         })
-      },
-      updateNodePosDiff({ id, diff, isDragging }) {
-        const update = (node: GraphNode, i: number) => {
-          const updatedNode: GraphNode = {
-            ...node,
-            __vf: {
-              ...node.__vf,
-              isDragging,
-            },
-          }
-
-          if (diff && node.__vf) {
-            updatedNode.__vf!.position = {
-              x: node.__vf.position.x + diff.x,
-              y: node.__vf.position.y + diff.y,
-            }
-          }
-
-          this.nodes.splice(i, 1, {
-            ...node,
-            ...updatedNode,
-          })
-        }
-
-        if (!id) {
-          const selectedNodes = this.nodes.filter((x) => this.selectedElements?.find((sNode) => sNode?.id === x.id))
-          selectedNodes.forEach((node) => {
-            const i = this.nodes.map((x) => x.id).indexOf(node.id)
-            update(node, i)
-          })
-        } else {
-          const i = this.nodes.map((x) => x.id).indexOf(id)
-          const node = this.nodes[i]
-          update(node, i)
-        }
       },
       setUserSelection(mousePos) {
         this.selectionActive = true
@@ -210,25 +115,22 @@ export default (id: string, preloadedState: FlowState) => {
           width: Math.abs(mousePos.x - startX),
           height: Math.abs(mousePos.y - startY),
         }
-
-        const selectedNodes = getNodesInside(this.nodes, nextUserSelectRect, this.transform)
-        const selectedEdges = getConnectedEdges(selectedNodes, this.edges)
+        const selectedNodes = getNodesInside(this.getNodes, this.userSelectionRect, this.transform)
+        const selectedEdges = getConnectedEdges(selectedNodes, this.getEdges)
 
         const nextSelectedElements = [...selectedNodes, ...selectedEdges]
         this.userSelectionRect = nextUserSelectRect
         this.selectedElements = nextSelectedElements
       },
       unsetUserSelection() {
-        const selectedNodes = this.selectedElements?.filter((node) => node && isGraphNode(node) && node.__vf) as GraphNode[]
-
         this.selectionActive = false
         this.userSelectionRect.draw = false
 
-        if (!selectedNodes || selectedNodes.length === 0) {
+        if (!this.getSelectedNodes || this.getSelectedNodes.length === 0) {
           this.selectedElements = undefined
           this.nodesSelectionActive = false
         } else {
-          this.selectedNodesBbox = getRectOfNodes(selectedNodes)
+          this.selectedNodesBbox = getRectOfNodes(this.getSelectedNodes)
           this.nodesSelectionActive = true
         }
       },
@@ -256,15 +158,6 @@ export default (id: string, preloadedState: FlowState) => {
       },
       setNodeExtent(nodeExtent) {
         this.nodeExtent = nodeExtent
-        this.nodes = this.nodes.map((node) => {
-          return {
-            ...node,
-            __vf: {
-              ...node.__vf,
-              position: node.__vf?.position ? clampPosition(node.__vf.position, nodeExtent) : { x: 0, y: 0 },
-            },
-          }
-        })
       },
       resetSelectedElements() {
         this.selectedElements = undefined
@@ -285,11 +178,48 @@ export default (id: string, preloadedState: FlowState) => {
         this.nodesConnectable = isInteractive
         this.elementsSelectable = isInteractive
       },
-      async addElements(elements: Elements) {
-        const { nextNodes, nextEdges } = await parseElements(elements, this.nodes, this.edges, this.nodeExtent)
-        this.elements = [...this.elements, ...nextNodes, ...nextEdges]
-        this.nodes = [...this.nodes, ...nextNodes]
-        this.edges = [...this.edges, ...nextEdges]
+      addElements(elements: Elements) {
+        const { nodes, edges } = parseElements(elements, this.elements, this.nodeExtent)
+        this.elements = [...this.elements, ...nodes, ...edges]
+      },
+      setState(state) {
+        if (typeof state.loading !== 'undefined') this.loading = state.loading
+        if (typeof state.panOnScroll !== 'undefined') this.panOnScroll = state.panOnScroll
+        if (typeof state.panOnScrollMode !== 'undefined') this.panOnScrollMode = state.panOnScrollMode
+        if (typeof state.panOnScrollSpeed !== 'undefined') this.panOnScrollSpeed = state.panOnScrollSpeed
+        if (typeof state.paneMoveable !== 'undefined') this.paneMoveable = state.paneMoveable
+        if (typeof state.zoomOnScroll !== 'undefined') this.zoomOnScroll = state.zoomOnScroll
+        if (typeof state.preventScrolling !== 'undefined') this.preventScrolling = state.preventScrolling
+        if (typeof state.zoomOnDoubleClick !== 'undefined') this.zoomOnDoubleClick = state.zoomOnDoubleClick
+        if (typeof state.zoomOnPinch !== 'undefined') this.zoomOnPinch = state.zoomOnPinch
+        if (typeof state.defaultZoom !== 'undefined') this.defaultZoom = state.defaultZoom
+        if (typeof state.defaultPosition !== 'undefined') this.defaultPosition = state.defaultPosition
+        if (typeof state.edgeTypes !== 'undefined') this.edgeTypes = state.edgeTypes
+        if (typeof state.nodeTypes !== 'undefined') this.nodeTypes = state.nodeTypes
+        if (typeof state.storageKey !== 'undefined') this.storageKey = state.storageKey
+        if (typeof state.edgeUpdaterRadius !== 'undefined') this.edgeUpdaterRadius = state.edgeUpdaterRadius
+        if (typeof state.elementsSelectable !== 'undefined') this.elementsSelectable = state.elementsSelectable
+        if (typeof state.onlyRenderVisibleElements !== 'undefined')
+          this.onlyRenderVisibleElements = state.onlyRenderVisibleElements
+        if (typeof state.nodesConnectable !== 'undefined') this.nodesConnectable = state.nodesConnectable
+        if (typeof state.nodesDraggable !== 'undefined') this.nodesDraggable = state.nodesDraggable
+        if (typeof state.arrowHeadColor !== 'undefined') this.arrowHeadColor = state.arrowHeadColor
+        if (typeof state.markerEndId !== 'undefined') this.markerEndId = state.markerEndId
+        if (typeof state.deleteKeyCode !== 'undefined') this.deleteKeyCode = state.deleteKeyCode
+        if (typeof state.selectionKeyCode !== 'undefined') this.selectionKeyCode = state.selectionKeyCode
+        if (typeof state.zoomActivationKeyCode !== 'undefined') this.zoomActivationKeyCode = state.zoomActivationKeyCode
+        if (typeof state.multiSelectionKeyCode !== 'undefined') this.multiSelectionKeyCode = state.multiSelectionKeyCode
+        if (typeof state.snapToGrid !== 'undefined') this.snapToGrid = state.snapToGrid
+        if (typeof state.snapGrid !== 'undefined') this.snapGrid = state.snapGrid
+        if (!this.isReady)
+          until(() => this.d3Zoom)
+            .not.toBeUndefined()
+            .then(() => {
+              if (typeof state.maxZoom !== 'undefined') this.setMaxZoom(state.maxZoom)
+              if (typeof state.minZoom !== 'undefined') this.setMinZoom(state.minZoom)
+              if (typeof state.translateExtent !== 'undefined') this.setTranslateExtent(state.translateExtent)
+              if (typeof state.nodeExtent !== 'undefined') this.setNodeExtent(state.nodeExtent)
+            })
       },
     },
   })

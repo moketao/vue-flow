@@ -5,6 +5,7 @@
   overflow: hidden;
 }
 
+.vue-flow__zoompane,
 .vue-flow__renderer,
 .vue-flow__pane,
 .vue-flow__selectionpane {

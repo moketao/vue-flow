@@ -14,10 +14,11 @@ import {
   FlowStore,
   GraphNode,
   FlowElements,
-  FlowElement,
   GraphEdge,
+  NextElements,
 } from '~/types'
 import { useWindow } from '~/composables'
+import { getSourceTargetNodes } from '~/utils/edge'
 
 const isHTMLElement = (el: EventTarget): el is HTMLElement => ('nodeName' || 'hasAttribute') in el
 
@@ -52,12 +53,10 @@ export const getHostForElement = (element: HTMLElement): Document => {
 export const isEdge = (element: Node | Edge | Connection): element is Edge =>
   'id' in element && 'source' in element && 'target' in element
 
-export const isNode = (element: Node | Edge | Connection): element is Node =>
-  'id' in element && !('source' in element) && !('target' in element)
+export const isNode = (element: Node | Edge | Connection): element is Node => 'id' in element && !isEdge(element)
 
-export const isGraphNode = (element: FlowElement | Connection): element is GraphNode => isNode(element) && '__vf' in element
-export const isGraphEdge = (element: FlowElement | Connection): element is GraphEdge =>
-  isEdge(element) && 'sourceTargetNodes' in element
+export const isGraphNode = (element: any): element is GraphNode => isNode(element) && '__vf' in element
+export const isGraphEdge = (element: any): element is GraphEdge => isEdge(element) && 'sourceTargetNodes' in element
 
 const getConnectedElements = (node: GraphNode, elements: Elements, dir: 'source' | 'target') => {
   if (!isNode(node)) return []
@@ -70,11 +69,14 @@ export const getIncomers = (node: GraphNode, elements: Elements) => getConnected
 
 export const removeElements = (elementsToRemove: Elements, elements: Elements) => {
   const nodeIdsToRemove = elementsToRemove.map((n) => n.id)
-
-  return elements.filter((element) => {
+  const shouldRemove = (element: Node | Edge) => {
     const { target, source } = isEdge(element) ? element : { target: '', source: '' }
-    return !(nodeIdsToRemove.includes(element.id) || nodeIdsToRemove.includes(target) || nodeIdsToRemove.includes(source))
+    return nodeIdsToRemove.includes(element.id) || nodeIdsToRemove.includes(target) || nodeIdsToRemove.includes(source)
+  }
+  elements.forEach((element, i) => {
+    if (shouldRemove(element)) elements.splice(i, 1)
   })
+  return elements.filter((element) => !shouldRemove(element))
 }
 
 const getEdgeId = ({ source, sourceHandle, target, targetHandle }: Connection): ElementId =>
@@ -106,12 +108,9 @@ export const addEdge = (edgeParams: Edge | Connection, elements: Elements) => {
       id: getEdgeId(edgeParams),
     } as Edge
   }
-
-  if (connectionExists(edge, elements)) {
-    return elements
-  }
-
-  return elements.concat(edge)
+  if (connectionExists(edge, elements)) return elements
+  elements.push(edge)
+  return [...elements, edge]
 }
 
 export const updateEdge = (oldEdge: Edge, newConnection: Connection, elements: Elements) => {
@@ -136,7 +135,7 @@ export const updateEdge = (oldEdge: Edge, newConnection: Connection, elements: E
     sourceHandle: newConnection.sourceHandle,
     targetHandle: newConnection.targetHandle,
   }
-
+  elements.splice(elements.indexOf(foundEdge), 1, edge)
   return elements.filter((e) => e.id !== oldEdge.id).concat(edge)
 }
 
@@ -167,27 +166,29 @@ export const onLoadProject = (currentStore: FlowStore) => (position: XYPosition)
 export const parseNode = (node: Node, nodeExtent: NodeExtent): GraphNode => ({
   ...node,
   id: node.id.toString(),
-  type: node.type || 'default',
+  type: node.type ?? 'default',
   __vf: {
-    position: clampPosition(node.position, nodeExtent),
     width: 0,
     height: 0,
     handleBounds: {
-      source: undefined,
-      target: undefined,
+      source: [],
+      target: [],
     },
     isDragging: false,
   },
+  position: clampPosition(node.position, nodeExtent),
 })
 
-export const parseEdge = (edge: Edge): Edge => ({
+export const parseEdge = (edge: Edge): GraphEdge => ({
   ...edge,
   source: edge.source.toString(),
   target: edge.target.toString(),
   sourceHandle: edge.sourceHandle ? edge.sourceHandle.toString() : undefined,
   targetHandle: edge.targetHandle ? edge.targetHandle.toString() : undefined,
   id: edge.id.toString(),
-  type: edge.type || 'default',
+  type: edge.type ?? 'default',
+  sourceNode: {} as any,
+  targetNode: {} as any,
 })
 
 const getBoundsOfBoxes = (box1: Box, box2: Box): Box => ({
@@ -215,7 +216,7 @@ export const getBoundsofRects = (rect1: Rect, rect2: Rect) => boxToRect(getBound
 
 export const getRectOfNodes = (nodes: GraphNode[]) => {
   const box = nodes.reduce(
-    (currBox, { __vf: { position = { x: 0, y: 0 }, width = 0, height = 0 } = {} }) =>
+    (currBox, { position = { x: 0, y: 0 }, __vf: { width = 0, height = 0 } = {} }) =>
       getBoundsOfBoxes(
         currBox,
         rectToBox({
@@ -245,7 +246,10 @@ export const getNodesInside = (nodes: GraphNode[], rect: Rect, [tx, ty, tScale]:
 
   return nodes.filter((node) => {
     if (!node.__vf || node.selectable === false) return false
-    const { position = { x: 0, y: 0 }, width = 0, height = 0, isDragging = false } = node.__vf
+    const {
+      position = { x: 0, y: 0 },
+      __vf: { width = 0, height = 0, isDragging = false },
+    } = node
     const nBox = rectToBox({ ...position, width, height } as any)
     const xOverlap = Math.max(0, Math.min(rBox.x2, nBox.x2) - Math.max(rBox.x, nBox.x))
     const yOverlap = Math.max(0, Math.min(rBox.y2, nBox.y2) - Math.max(rBox.y, nBox.y))
@@ -266,7 +270,7 @@ export const getNodesInside = (nodes: GraphNode[], rect: Rect, [tx, ty, tScale]:
   })
 }
 
-export const getConnectedEdges = (nodes: GraphNode[], edges: Edge[]) => {
+export const getConnectedEdges = (nodes: GraphNode[], edges: GraphEdge[]) => {
   const nodeIds = nodes.map((node) => node.id)
   return edges.filter((edge) => nodeIds.includes(edge.source) || nodeIds.includes(edge.target))
 }
@@ -306,4 +310,87 @@ export const getTransformForBounds = (
   const y = height / 2 - boundsCenterY * clampedZoom + (offset.y ?? 0)
 
   return [x, y, clampedZoom]
+}
+
+export const processElements = (elements: FlowElements, fn: (elements: FlowElements) => void) => {
+  return new Promise((resolve) => {
+    const chunk = 50
+    let index = 0
+    function doChunk() {
+      const chunkPos = chunk * index
+      const lastChunk = elements.length - chunkPos < chunkPos
+      const cnt = !lastChunk ? chunk : elements.length - chunkPos
+      fn(elements.slice(chunkPos, chunkPos + cnt))
+      index++
+      if (!lastChunk) {
+        setTimeout(doChunk, 1)
+      } else {
+        resolve(true)
+      }
+    }
+    doChunk()
+  })
+}
+
+export const parseElement = (element: Node | Edge, prevElements: FlowElements, nodeExtent: NodeExtent) => {
+  let parsed: GraphEdge | GraphNode = {} as any
+  const index = prevElements.map((x) => x.id).indexOf(element.id)
+  if (isNode(element)) {
+    const storeNode = prevElements[index]
+
+    if (!isGraphNode(element)) parsed = parseNode(element, nodeExtent)
+    else parsed = element
+    if (storeNode) {
+      const updatedNode = {
+        ...storeNode,
+        ...parsed,
+      } as GraphNode
+
+      if (typeof element.type !== 'undefined' && element.type !== storeNode.type) {
+        // we reset the elements dimensions here in order to force a re-calculation of the bounds.
+        // When the type of a node changes it is possible that the number or positions of handles changes too.
+        updatedNode.__vf.width = 0
+      }
+
+      parsed = updatedNode
+    }
+  } else if (isEdge(element)) {
+    const storeEdge = prevElements[index]
+
+    if (!isGraphEdge(element)) parsed = parseEdge(element)
+    else parsed = element
+    if (storeEdge) {
+      parsed = {
+        ...storeEdge,
+        ...parsed,
+      } as GraphEdge
+    }
+  }
+  return { parsed, index }
+}
+
+export const parseElements = (elements: Elements, prevElements: FlowElements, nodeExtent: NodeExtent) => {
+  const { nodes, edges }: NextElements = {
+    nodes: [],
+    edges: [],
+  }
+  for (const element of elements) {
+    const { parsed } = parseElement(element, prevElements, nodeExtent)
+    if (parsed) {
+      if (isEdge(parsed)) edges.push(parsed)
+      else nodes.push(parsed)
+    }
+  }
+  edges.forEach((edge, i, arr) => {
+    const { sourceNode, targetNode } = getSourceTargetNodes(edge, nodes)
+    if (!sourceNode) console.warn(`couldn't create edge for source id: ${edge.source}; edge id: ${edge.id}`)
+    if (!targetNode) console.warn(`couldn't create edge for target id: ${edge.target}; edge id: ${edge.id}`)
+
+    arr[i] = {
+      ...edge,
+      sourceNode,
+      targetNode,
+    }
+  })
+  return { nodes, edges }
 }

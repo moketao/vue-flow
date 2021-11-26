@@ -1,10 +1,9 @@
-import { Component, CSSProperties, DefineComponent } from 'vue'
+import { CSSProperties } from 'vue'
 import { DraggableOptions } from '@braks/revue-draggable'
 import { XYPosition, ElementId, Position, SnapGrid } from './flow'
-import { HandleElement } from './components'
+import { HandleElement, NodeTypes, ValidConnectionFunc } from './components'
 
 export interface VFInternals {
-  position: XYPosition
   isDragging?: boolean
   width: number
   height: number
@@ -14,22 +13,6 @@ export interface VFInternals {
   }
 }
 
-export interface NodeProps<T = any> {
-  id: ElementId
-  type?: string
-  data?: T
-  selected?: boolean
-  connectable?: boolean
-  xPos?: number
-  yPos?: number
-  targetPosition?: Position
-  sourcePosition?: Position
-  dragging?: boolean
-}
-
-export type NodeComponent = Component<NodeProps> | DefineComponent<NodeProps, any, any, any, any> | string
-export type DefaultNodeTypes = { [key in 'input' | 'output' | 'default']: Component<NodeProps> }
-export type NodeTypes = (keyof DefaultNodeTypes | string)[]
 export type Draggable = Omit<DraggableOptions, 'scale' | 'grid' | 'enableUserSelectHack' | 'enableTransformFix'> | boolean
 
 export interface Node<T = any> {
@@ -47,26 +30,28 @@ export interface Node<T = any> {
   connectable?: boolean
   dragHandle?: string
   snapGrid?: SnapGrid
+  isValidTargetPos?: ValidConnectionFunc
+  isValidSourcePos?: ValidConnectionFunc
 }
 
 export interface GraphNode<T = any> extends Node<T> {
   __vf: VFInternals
 }
 
-export type SourceTargetNode = {
-  sourceNode: GraphNode
-  targetNode: GraphNode
-}
-
-export type NodePosUpdate = {
+export interface NodeProps<T = any> extends GraphNode {
   id: ElementId
-  pos: XYPosition
-}
-
-export type NodeDiffUpdate = {
-  id?: ElementId
-  diff?: XYPosition
-  isDragging?: boolean
+  type?: string
+  data?: T
+  selected?: boolean
+  connectable?: boolean
+  xPos?: number
+  yPos?: number
+  targetPosition?: Position
+  sourcePosition?: Position
+  dragging?: boolean
+  isValidTargetPos?: ValidConnectionFunc
+  isValidSourcePos?: ValidConnectionFunc
+  __vf: VFInternals
 }
 
 export type TranslateExtent = [[number, number], [number, number]]

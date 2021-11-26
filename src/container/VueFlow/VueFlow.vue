@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { CSSProperties, onBeforeUnmount } from 'vue'
-import { invoke } from '@vueuse/core'
 import {
   ConnectionLineType,
   ConnectionMode,
@@ -11,24 +10,19 @@ import {
   NodeExtent,
   NodeTypes,
   EdgeTypes,
-  FlowStore,
-  FlowState,
-  FlowInstance,
   Loading,
   FlowOptions,
 } from '../../types'
+import Renderer from '../Renderer/Renderer.vue'
 import ZoomPane from '../ZoomPane/ZoomPane.vue'
 import SelectionPane from '../SelectionPane/SelectionPane.vue'
 import NodeRenderer from '../NodeRenderer/NodeRenderer.vue'
 import EdgeRenderer from '../EdgeRenderer/EdgeRenderer.vue'
 import LoadingIndicator from '../../components/Loading/LoadingIndicator.vue'
-import { createHooks, initFlow, useWindow, useZoomPanHelper } from '../../composables'
-import { onLoadGetElements, onLoadProject, onLoadToObject } from '../../utils'
-import microDiff from 'microdiff'
+import { createHooks, initFlow } from '../../composables'
 
 interface FlowProps extends FlowOptions {
   id?: string
-  store?: FlowStore
   modelValue?: Elements
   nodeTypes?: NodeTypes
   edgeTypes?: EdgeTypes
@@ -65,10 +59,9 @@ interface FlowProps extends FlowOptions {
   edgeUpdaterRadius?: number
   storageKey?: string
   loading?: Loading
-  worker?: boolean
 }
 
-const emit = defineEmits([...Object.keys(createHooks()), 'update:elements', 'update:modelValue'])
+const emit = defineEmits([...Object.keys(createHooks()), 'update:modelValue'])
 
 const props = withDefaults(defineProps<FlowProps>(), {
   modelValue: () => [],
@@ -108,74 +101,37 @@ const props = withDefaults(defineProps<FlowProps>(), {
   paneMoveable: true,
   edgeUpdaterRadius: 10,
   loading: false,
-  worker: false,
 })
-const store = initFlow(emit, typeof props.storageKey === 'string' ? props.storageKey : props.id, props.store)
+const store = initFlow(emit, typeof props.storageKey === 'string' ? props.storageKey : props.id)
 const elements = useVModel(props, 'modelValue', emit)
-
-// if there are preloaded elements we overwrite the current elements with the stored ones
-if (store.elements.length) elements.value = store.elements
-
 const options = Object.assign({}, store.$state, props)
+store.setState(options)
+watch(
+  () => props,
+  () => store.setState(props),
+  { flush: 'post', deep: true },
+)
+const { pause: pauseModel, resume: resumeModel } = pausableWatch(
+  () => props.modelValue.length,
+  async () => await store.setElements(elements.value),
+)
+const { pause, resume } = pausableWatch(elements, async (val) => await store.setElements(val), { flush: 'post' })
 
-const init = async (state: FlowState) => {
-  // set state variables
-  const skip = ['modelValue', 'd3Zoom', 'd3Selection', 'd3ZoomHandler', 'minZoom', 'maxZoom', 'translateExtent', 'nodeExtent']
-  for (const opt of Object.keys(state)) {
-    const val = state[opt as keyof FlowState]
-    if (typeof val !== 'undefined' && !skip.includes(opt)) {
-      if (typeof val === 'object' && !Array.isArray(val)) {
-        ;(store as any)[opt] = { ...(store as any)[opt], ...val }
-      } else (store as any)[opt] = val
-    }
-  }
-  if (!store.isReady) await until(() => store.d3Zoom).not.toBeUndefined()
-  store.setMinZoom(state.minZoom)
-  store.setMaxZoom(state.maxZoom)
-  store.setTranslateExtent(state.translateExtent)
-  store.setNodeExtent(state.nodeExtent)
-}
-onBeforeUnmount(() => store?.$dispose())
-
-invoke(async () => {
-  init(options)
-  await store.setElements(elements.value)
-  store.isReady = true
-
-  // if ssr we can't wait for dimensions, they'll never really exist
-  const window = useWindow()
-  if ('screen' in window)
-    await until(store.dimensions).toMatch(({ height, width }) => !isNaN(width) && width > 0 && !isNaN(height) && height > 0)
-
-  const { zoomIn, zoomOut, zoomTo, transform: setTransform, fitView } = useZoomPanHelper(store)
-  const instance: FlowInstance = {
-    fitView: (params = { padding: 0.1 }) => fitView(params),
-    zoomIn,
-    zoomOut,
-    zoomTo,
-    setTransform,
-    project: onLoadProject(store),
-    getElements: onLoadGetElements(store),
-    toObject: onLoadToObject(store),
-  }
-  store.hooks.load.trigger(instance)
-  store.instance = instance
+until(() => store.isReady).toBe(true).then(() => {
   watch(
-    () => props,
-    () => init({ ...store.$state, ...props } as FlowState),
+    () => store.elements,
+    (val) => {
+      pause()
+      pauseModel()
+      elements.value = val
+      setTimeout(() => {
+        resume()
+        resumeModel()
+      }, 1)
+    },
     { flush: 'post', deep: true },
   )
 })
-
-watch(props.modelValue, (val) => {
-  const diff = microDiff(val, store.elements, { cyclesFix: false })
-  if (diff.length) store.setElements(val)
-}, { flush: 'post' })
-watch(elements, (val) =>{
-  const diff = microDiff(val, store.elements, { cyclesFix: false })
-  if (diff.length) store.setElements(val)
-}, { flush: 'post' })
-watch(store.elements, (val) => (elements.value = val), { flush: 'post' })
 
 const transitionName = computed(() => {
   let name = ''
@@ -185,6 +141,8 @@ const transitionName = computed(() => {
   }
   return name
 })
+
+onBeforeUnmount(() => store?.$dispose())
 </script>
 <script lang="ts">
 export default {
@@ -194,95 +152,97 @@ export default {
 <template>
   <div class="vue-flow">
     <Transition :key="`vue-flow-transition-${store.$id}`" :name="transitionName">
-      <Suspense>
+      <Suspense timeout="0">
         <template #default>
-          <ZoomPane
-            :key="`zoom-pane-${store.$id}`"
-            :prevent-scrolling="store.preventScrolling"
-            :selection-key-code="store.selectionKeyCode"
-            :zoom-activation-key-code="store.zoomActivationKeyCode"
-            :default-zoom="store.defaultZoom"
-            :default-position="store.defaultPosition"
-            :zoom-on-scroll="store.zoomOnScroll"
-            :zoom-on-pinch="store.zoomOnPinch"
-            :zoom-on-double-click="store.zoomOnDoubleClick"
-            :pan-on-scroll="store.panOnScroll"
-            :pan-on-scroll-speed="store.panOnScrollSpeed"
-            :pan-on-scroll-mode="store.panOnScrollMode"
-            :pane-moveable="store.paneMoveable"
-          >
-            <template #default="zoomPaneProps">
-              <SelectionPane
-                :key="`selection-pane-${store.$id}`"
-                :edges="store.getEdges"
-                :selected-elements="store.selectedElements"
-                :selection-active="store.selectionActive"
-                :nodes-selection-active="store.nodesSelectionActive"
-                :elements-selectable="store.elementsSelectable"
-                :delete-key-code="store.deleteKeyCode"
-                :multi-selection-key-code="store.multiSelectionKeyCode"
-                :selection-key-code="store.selectionKeyCode"
-              >
-                <NodeRenderer
-                  :key="`node-renderer-${store.$id}`"
-                  :nodes="store.getNodes"
-                  :node-types="store.getNodeTypes"
-                  :snap-to-grid="store.snapToGrid"
-                  :snap-grid="store.snapGrid"
-                  :select-nodes-on-drag="store.selectNodesOnDrag"
-                  :transform="store.transform"
-                  :elements-selectable="store.elementsSelectable"
-                  :nodes-draggable="store.nodesDraggable"
-                  :nodes-connectable="store.nodesConnectable"
-                >
-                  <template
-                    v-for="nodeName of Object.keys(store.getNodeTypes)"
-                    #[`node-${nodeName}`]="nodeProps"
-                    :key="`node-${nodeName}-${store.$id}`"
-                  >
-                    <slot :name="`node-${nodeName}`" v-bind="nodeProps" />
-                  </template>
-                </NodeRenderer>
-                <EdgeRenderer
-                  :key="`edge-renderer-${store.$id}`"
-                  :transform="store.transform"
-                  :dimensions="store.dimensions"
+          <Renderer :key="`renderer-${store.$id}`" :elements="elements">
+            <ZoomPane
+              :key="`zoom-pane-${store.$id}`"
+              :prevent-scrolling="store.preventScrolling"
+              :selection-key-code="store.selectionKeyCode"
+              :zoom-activation-key-code="store.zoomActivationKeyCode"
+              :default-zoom="store.defaultZoom"
+              :default-position="store.defaultPosition"
+              :zoom-on-scroll="store.zoomOnScroll"
+              :zoom-on-pinch="store.zoomOnPinch"
+              :zoom-on-double-click="store.zoomOnDoubleClick"
+              :pan-on-scroll="store.panOnScroll"
+              :pan-on-scroll-speed="store.panOnScrollSpeed"
+              :pan-on-scroll-mode="store.panOnScrollMode"
+              :pane-moveable="store.paneMoveable"
+            >
+              <template #default="zoomPaneProps">
+                <SelectionPane
+                  :key="`selection-pane-${store.$id}`"
                   :edges="store.getEdges"
-                  :edge-types="store.getEdgeTypes"
-                  :nodes="store.getNodes"
                   :selected-elements="store.selectedElements"
+                  :selection-active="store.selectionActive"
+                  :nodes-selection-active="store.nodesSelectionActive"
                   :elements-selectable="store.elementsSelectable"
-                  :connection-node-id="store.connectionNodeId"
-                  :connction-handle-id="store.connectionHandleId"
-                  :connection-handle-type="store.connectionHandleType"
-                  :connection-position="store.connectionPosition"
-                  :connection-mode="store.connectionMode"
-                  :nodes-connectable="store.nodesConnectable"
-                  :connection-line-type="store.connectionLineType"
-                  :connection-line-style="store.connectionLineStyle"
-                  :arrow-head-color="store.arrowHeadColor"
-                  :marker-end-id="store.markerEndId"
-                  :only-render-visible-elements="store.onlyRenderVisibleElements"
+                  :delete-key-code="store.deleteKeyCode"
+                  :multi-selection-key-code="store.multiSelectionKeyCode"
+                  :selection-key-code="store.selectionKeyCode"
                 >
-                  <template
-                    v-for="edgeName of Object.keys(store.getEdgeTypes)"
-                    #[`edge-${edgeName}`]="edgeProps"
-                    :key="`edge-${edgeName}-${store.$id}`"
+                  <NodeRenderer
+                    :key="`node-renderer-${store.$id}`"
+                    :nodes="store.getNodes"
+                    :node-types="store.getNodeTypes"
+                    :snap-to-grid="store.snapToGrid"
+                    :snap-grid="store.snapGrid"
+                    :select-nodes-on-drag="store.selectNodesOnDrag"
+                    :transform="store.transform"
+                    :elements-selectable="store.elementsSelectable"
+                    :nodes-draggable="store.nodesDraggable"
+                    :nodes-connectable="store.nodesConnectable"
                   >
-                    <slot :name="`edge-${edgeName}`" v-bind="edgeProps" />
-                  </template>
-                  <template #custom-connection-line="customConnectionLineProps">
-                    <slot
-                      :key="`connection-line-${store.$id}`"
-                      name="custom-connection-line"
-                      v-bind="customConnectionLineProps"
-                    />
-                  </template>
-                </EdgeRenderer>
-              </SelectionPane>
-              <slot name="zoom-pane" v-bind="zoomPaneProps"></slot>
-            </template>
-          </ZoomPane>
+                    <template
+                      v-for="nodeName of Object.keys(store.getNodeTypes)"
+                      #[`node-${nodeName}`]="nodeProps"
+                      :key="`node-${nodeName}-${store.$id}`"
+                    >
+                      <slot :name="`node-${nodeName}`" v-bind="nodeProps" />
+                    </template>
+                  </NodeRenderer>
+                  <EdgeRenderer
+                    :key="`edge-renderer-${store.$id}`"
+                    :transform="store.transform"
+                    :dimensions="store.dimensions"
+                    :edges="store.getEdges"
+                    :edge-types="store.getEdgeTypes"
+                    :nodes="store.getNodes"
+                    :selected-elements="store.selectedElements"
+                    :elements-selectable="store.elementsSelectable"
+                    :connection-node-id="store.connectionNodeId"
+                    :connction-handle-id="store.connectionHandleId"
+                    :connection-handle-type="store.connectionHandleType"
+                    :connection-position="store.connectionPosition"
+                    :connection-mode="store.connectionMode"
+                    :nodes-connectable="store.nodesConnectable"
+                    :connection-line-type="store.connectionLineType"
+                    :connection-line-style="store.connectionLineStyle"
+                    :arrow-head-color="store.arrowHeadColor"
+                    :marker-end-id="store.markerEndId"
+                    :only-render-visible-elements="store.onlyRenderVisibleElements"
+                  >
+                    <template
+                      v-for="edgeName of Object.keys(store.getEdgeTypes)"
+                      #[`edge-${edgeName}`]="edgeProps"
+                      :key="`edge-${edgeName}-${store.$id}`"
+                    >
+                      <slot :name="`edge-${edgeName}`" v-bind="edgeProps" />
+                    </template>
+                    <template #custom-connection-line="customConnectionLineProps">
+                      <slot
+                        :key="`connection-line-${store.$id}`"
+                        name="custom-connection-line"
+                        v-bind="customConnectionLineProps"
+                      />
+                    </template>
+                  </EdgeRenderer>
+                </SelectionPane>
+                <slot name="zoom-pane" v-bind="zoomPaneProps"></slot>
+              </template>
+            </ZoomPane>
+          </Renderer>
         </template>
         <template v-if="store.loading" #fallback>
           <slot :key="`loading-indicator-${store.$id}`" name="loading-indicator">

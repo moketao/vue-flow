@@ -1,4 +1,4 @@
-import { CSSProperties } from 'vue'
+import { Component, CSSProperties, DefineComponent } from 'vue'
 import {
   BackgroundVariant,
   Dimensions,
@@ -11,10 +11,16 @@ import {
   XYPosition,
 } from './flow'
 import { Connection, ConnectionLineType, ConnectionMode } from './connection'
-import { GraphNode, Node, NodeExtent, NodeTypes, TranslateExtent } from './node'
-import { FlowStore } from './store'
-import { EdgeTypes } from './edge'
+import { GraphNode, Node, NodeExtent, NodeProps, TranslateExtent } from './node'
+import { EdgeProps } from './edge'
 import { KeyCode, PanOnScrollMode } from './zoom'
+
+export type DefaultEdgeTypes = { [key in 'default' | 'straight' | 'smoothstep' | 'step']: Component<EdgeProps> }
+export type EdgeTypes = (keyof DefaultEdgeTypes | string)[]
+export type NodeComponent = Component<NodeProps> | DefineComponent<NodeProps, any, any, any, any> | string
+export type DefaultNodeTypes = { [key in 'input' | 'output' | 'default']: Component<NodeProps> }
+export type NodeTypes = (keyof DefaultNodeTypes | string)[]
+export type EdgeComponent = Component<EdgeProps> | DefineComponent<EdgeProps, any, any, any, any, any> | string
 
 export type HandleType = 'source' | 'target'
 
@@ -24,6 +30,14 @@ export interface HandleElement extends XYPosition, Dimensions {
 }
 
 export type ValidConnectionFunc = (connection: Connection) => boolean
+
+export interface HandleProps {
+  id?: string
+  type?: string
+  position?: Position
+  isValidConnection?: ValidConnectionFunc
+  connectable?: boolean
+}
 
 export interface BackgroundProps {
   variant?: BackgroundVariant
@@ -102,7 +116,6 @@ export interface CustomConnectionLineProps {
 
 export interface FlowProps extends FlowOptions {
   id?: string
-  store?: FlowStore
   modelValue?: Elements
   nodeTypes?: NodeTypes
   edgeTypes?: EdgeTypes
@@ -139,5 +152,4 @@ export interface FlowProps extends FlowOptions {
   edgeUpdaterRadius?: number
   storageKey?: string
   loading?: Loading
-  worker?: boolean
 }

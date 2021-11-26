@@ -1,11 +1,7 @@
-import { Component, CSSProperties, DefineComponent } from 'vue'
+import { CSSProperties } from 'vue'
 import { ArrowHeadType, ElementId, Position } from './flow'
-import { EdgeTextProps } from './components'
-import { SourceTargetNode } from './node'
-
-// eslint-disable-next-line no-use-before-define
-export type DefaultEdgeTypes = { [key in 'default' | 'straight' | 'smoothstep' | 'step']: Component<EdgeProps> }
-export type EdgeTypes = (keyof DefaultEdgeTypes | string)[]
+import { EdgeTextProps, EdgeTypes } from './components'
+import { GraphNode } from './node'
 
 export interface Edge<T = any> {
   id: ElementId
@@ -21,7 +17,7 @@ export interface Edge<T = any> {
     | string
     | {
         component: any
-        props?: EdgeTextProps
+        props?: Record<string, any> & Partial<EdgeTextProps>
       }
   labelStyle?: any
   labelShowBg?: boolean
@@ -38,10 +34,11 @@ export interface Edge<T = any> {
 }
 
 export interface GraphEdge<T = any> extends Edge<T> {
-  sourceTargetNodes: SourceTargetNode
+  sourceNode: GraphNode
+  targetNode: GraphNode
 }
 
-export interface EdgeProps<T = any> extends Edge<T> {
+export interface EdgeProps<T = any> extends GraphEdge<T> {
   sourceX: number
   sourceY: number
   targetX: number
@@ -64,5 +61,3 @@ export interface EdgePositions {
   targetX: number
   targetY: number
 }
-
-export type EdgeComponent = Component<EdgeProps> | DefineComponent<EdgeProps, any, any, any, any, any> | string

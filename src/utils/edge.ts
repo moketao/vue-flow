@@ -1,4 +1,4 @@
-import { rectToBox } from './graph'
+import { isGraphNode, rectToBox } from './graph'
 import {
   Edge,
   EdgePositions,
@@ -6,16 +6,15 @@ import {
   GraphNode,
   HandleElement,
   Position,
-  SourceTargetNode,
   Transform,
   XYPosition,
-  Elements,
   FlowElements,
+  GraphEdge,
 } from '~/types'
 
-export function getHandlePosition(position: Position, node: GraphNode, handle: any | null = null): XYPosition {
-  const x = (handle?.x || 0) + node.__vf.position.x
-  const y = (handle?.y || 0) + node.__vf.position.y
+export function getHandlePosition(position: Position, node: GraphNode, handle?: HandleElement): XYPosition {
+  const x = (handle?.x ?? 0) + node.position.x
+  const y = (handle?.y ?? 0) + node.position.y
   const width = handle?.width || node.__vf.width
   const height = handle?.height || node.__vf.height
 
@@ -60,10 +59,10 @@ export function getHandle(bounds: HandleElement[], handleId?: ElementId): Handle
 
 export const getEdgePositions = (
   sourceNode: GraphNode,
-  sourceHandle: HandleElement | unknown,
+  sourceHandle: HandleElement | undefined,
   sourcePosition: Position,
   targetNode: GraphNode,
-  targetHandle: HandleElement | unknown,
+  targetHandle: HandleElement | undefined,
   targetPosition: Position,
 ): EdgePositions => {
   const sourceHandlePos = getHandlePosition(sourcePosition, sourceNode, sourceHandle)
@@ -115,18 +114,17 @@ export function isEdgeVisible({ sourcePos, targetPos, width, height, transform }
   return overlappingArea > 0
 }
 
-export const getSourceTargetNodes = (edge: Edge, elements: FlowElements | Elements): SourceTargetNode => {
-  let { sourceNode, targetNode }: any = {
-    sourceNode: null,
-    targetNode: null,
-  }
+export const getSourceTargetNodes = (edge: GraphEdge | Edge, elements: FlowElements) => {
+  const nodes: GraphNode[] = []
   for (const el of elements) {
-    if (!sourceNode || !targetNode) {
-      if (el.id === edge.source) sourceNode = el
-      if (el.id === edge.target) targetNode = el
+    if (!nodes[0] || !nodes[1]) {
+      if (isGraphNode(el)) {
+        if (el.id === edge.source) nodes[0] = el
+        if (el.id === edge.target) nodes[1] = el
+      }
     } else {
       break
     }
   }
-  return { sourceNode, targetNode }
+  return { sourceNode: nodes[0], targetNode: nodes[1] }
 }

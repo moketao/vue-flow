@@ -15,13 +15,13 @@ export {
   updateEdge,
   getTransformForBounds,
   getRectOfNodes,
-  isInputDOMNode,
   graphPosToZoomedPos,
 } from './utils/graph'
 export { defaultEdgeTypes, defaultNodeTypes } from './utils/store'
 export { default as useZoomPanHelper } from './composables/useZoomPanHelper'
 export { default as useVueFlow } from './composables/useVueFlow'
 export { default as useHandle } from './composables/useHandle'
+export { default as useWindow } from './composables/useWindow'
 
 export * from './additional-components'
 export * from './types'
