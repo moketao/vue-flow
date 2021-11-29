@@ -18,6 +18,22 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "noUnusedLocals": false,
+    "noImplicitAny": false,
+
+    "importHelpers": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "pretty": true,
+    "allowJs": true,
+    "checkJs": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "strictPropertyInitialization": false,
+    "downlevelIteration": true,
+    "noImplicitThis": true,
+    "removeComments": false,
+    "strictFunctionTypes": false,
+
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "types": [
