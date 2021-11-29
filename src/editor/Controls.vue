@@ -18,8 +18,9 @@ const state = useStorage(flowKey, {
 
 import {selElement} from "~/editor/EditorTypes";
 
-watch(()=>selElement.value,(value, oldValue, onInvalidate)=>{
-  console.log(value,oldValue);
+watch(()=>selElement.value,(v, oldValue, onInvalidate)=>{
+  modelValue.value = v.data.label
+  //todo: 检查为什么没有更新
 })
 
 const getNodeId = () => `randomnode_${+new Date()}`
@@ -71,12 +72,14 @@ const iconAdd16Filled = ()=>h(Add16Filled);
 const iconClean = ()=>h(Clean);
 const iconBarcodeOutlined = ()=>h(BarcodeOutlined);
 
-let modelValue = computed(()=> {
-  return selElement.value.data.label
-});
 let onChange = (v)=>{
   selElement.value.data.label = v;
 }
+let modelValue = computed({get:()=> {
+  return selElement.value.data.label
+},set:(v)=>{
+  onChange(v)
+}});
 </script>
 <template>
   <div class="EditorControls">
