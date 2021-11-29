@@ -10,6 +10,10 @@ const onElementsRemove = (elementsToRemove: Elements) => {
   console.log(elementsToRemove);
   elements.value = removeElements(elementsToRemove, elements.value)
 }
+import {selElement} from './EditorTypes'
+const onElementsSel = ({event: MouseEvent, element: el}) => {
+  selElement.value = el;
+}
 const onRestore = (els: Elements) => {
   console.log('onRestore');
   elements.value = JSON.parse(
@@ -42,7 +46,9 @@ const onConnect = (params: Edge | Connection) =>{
 }
 </script>
 <template>
-  <VueFlow v-model="elements" storage-key="example-flow-1231" @connect="onConnect" @elements-remove="onElementsRemove">
+  <VueFlow v-model="elements" storage-key="example-flow-1231" @connect="onConnect" @elements-remove="onElementsRemove"
+    @elementClick="onElementsSel"
+  >
     <Controls @restore="onRestore" @lineWidth="changeLineWidth" />
   </VueFlow>
 </template>

@@ -1,6 +1,7 @@
 .EditorControls{
-    position: absolute; z-index: 6;
+  position: absolute; z-index: 6;
+  display: flex;
 }
 .EditorControls .n-button{
-    margin: 5px;
+  margin: 5px;
 }
