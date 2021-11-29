@@ -121,7 +121,11 @@
   border-radius: 100%;
 
   &.connectable {
-    cursor: crosshair;
+    cursor: none;
+
+    &:hover{
+       box-shadow: 0 0 0 4px rgba(85, 147, 83, 0.5);
+    }
   }
 }
 
