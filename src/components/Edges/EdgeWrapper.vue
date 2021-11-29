@@ -10,6 +10,7 @@ interface EdgeWrapper {
   markerEndId?: string
   edgeUpdaterRadius?: number
   selectable?: boolean
+  updatable?: boolean
   dimensions: Dimensions
   transform: Transform
 }
@@ -141,6 +142,7 @@ export default {
         target: props.edge.target,
         selected: isSelected,
         animated: props.edge.animated,
+        updatable: props.updatable,
         label: props.edge.label,
         labelStyle: props.edge.labelStyle,
         labelShowBg: props.edge.labelShowBg,
@@ -169,6 +171,7 @@ export default {
           targetNode: props.edge.targetNode,
           source: props.edge.source,
           target: props.edge.target,
+          updatable: props.updatable,
           selected: isSelected,
           animated: props.edge.animated,
           label: props.edge.label,
@@ -192,7 +195,12 @@ export default {
         }"
       />
     </slot>
-    <g @mousedown="onEdgeUpdaterSourceMouseDown" @mouseenter="onEdgeUpdaterMouseEnter" @mouseout="onEdgeUpdaterMouseOut">
+    <g
+      v-if="props.updatable"
+      @mousedown="onEdgeUpdaterSourceMouseDown"
+      @mouseenter="onEdgeUpdaterMouseEnter"
+      @mouseout="onEdgeUpdaterMouseOut"
+    >
       <EdgeAnchor
         :position="sourcePosition"
         :center-x="edgePos.sourceX"
@@ -200,7 +208,12 @@ export default {
         :radius="props.edgeUpdaterRadius"
       />
     </g>
-    <g @mousedown="onEdgeUpdaterTargetMouseDown" @mouseenter="onEdgeUpdaterMouseEnter" @mouseout="onEdgeUpdaterMouseOut">
+    <g
+      v-if="props.updatable"
+      @mousedown="onEdgeUpdaterTargetMouseDown"
+      @mouseenter="onEdgeUpdaterMouseEnter"
+      @mouseout="onEdgeUpdaterMouseOut"
+    >
       <EdgeAnchor
         :position="targetPosition"
         :center-x="edgePos.targetX"

@@ -25,10 +25,11 @@ export interface FlowEvents {
   connectStop: MouseEvent
   connectEnd: MouseEvent
   load: FlowInstance
+  elementsProcessed: FlowElements
   move: FlowTransform | undefined
   moveStart: FlowTransform | undefined
   moveEnd: FlowTransform | undefined
-  selectionChange: FlowElements | null
+  selectionChange: FlowElements | undefined
   selectionDragStart: { event: MouseEvent; nodes: GraphNode[] }
   selectionDrag: { event: MouseEvent; nodes: GraphNode[] }
   selectionDragStop: { event: MouseEvent; nodes: GraphNode[] }
@@ -36,7 +37,6 @@ export interface FlowEvents {
   paneScroll: WheelEvent | undefined
   paneClick: MouseEvent
   paneContextMenu: MouseEvent
-  edgeUpdate: { edge: GraphEdge; connection: Connection }
   edgeContextMenu: { event: MouseEvent; edge: GraphEdge }
   edgeMouseEnter: { event: MouseEvent; edge: GraphEdge }
   edgeMouseMove: { event: MouseEvent; edge: GraphEdge }
@@ -44,6 +44,7 @@ export interface FlowEvents {
   edgeDoubleClick: { event: MouseEvent; edge: GraphEdge }
   edgeClick: { event: MouseEvent; edge: GraphEdge }
   edgeUpdateStart: { event: MouseEvent; edge: GraphEdge }
+  edgeUpdate: { edge: GraphEdge; connection: Connection }
   edgeUpdateEnd: { event: MouseEvent; edge: GraphEdge }
 }
 

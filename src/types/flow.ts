@@ -68,6 +68,8 @@ export type FitViewParams = {
     x?: number
     y?: number
   }
+  transitionDuration?: number
+  nodes?: ElementId[]
 }
 
 export type FlowExportObject<T = any> = {
@@ -126,6 +128,7 @@ export interface FlowOptions {
   snapToGrid?: boolean
   snapGrid?: [number, number]
   onlyRenderVisibleElements?: boolean
+  edgesUpdatable?: boolean
   nodesDraggable?: boolean
   nodesConnectable?: boolean
   elementsSelectable?: boolean

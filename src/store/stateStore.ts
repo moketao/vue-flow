@@ -91,6 +91,7 @@ export default (id: string, preloadedState: FlowState) => {
         await processElements([...nodes, ...edges], (processed) => {
           this.elements = [...this.elements, ...processed]
         })
+        this.hooks.elementsProcessed.trigger(this.elements)
       },
       setUserSelection(mousePos) {
         this.selectionActive = true
@@ -128,6 +129,7 @@ export default (id: string, preloadedState: FlowState) => {
 
         if (!this.getSelectedNodes || this.getSelectedNodes.length === 0) {
           this.selectedElements = undefined
+          this.hooks.selectionChange.trigger(undefined)
           this.nodesSelectionActive = false
         } else {
           this.selectedNodesBbox = getRectOfNodes(this.getSelectedNodes)
@@ -138,6 +140,7 @@ export default (id: string, preloadedState: FlowState) => {
         const selectedElementsArr = Array.isArray(elements) ? elements : [elements]
         const selectedElementsUpdated = microDiff(selectedElementsArr, this.selectedElements ?? []).length
         this.selectedElements = selectedElementsUpdated ? selectedElementsArr : this.selectedElements
+        if (selectedElementsUpdated) this.hooks.selectionChange.trigger(selectedElementsArr)
       },
       initD3Zoom({ d3ZoomHandler, d3Zoom, d3Selection }) {
         this.d3Zoom = d3Zoom
@@ -179,8 +182,7 @@ export default (id: string, preloadedState: FlowState) => {
         this.elementsSelectable = isInteractive
       },
       addElements(elements: Elements) {
-        const { nodes, edges } = parseElements(elements, this.elements, this.nodeExtent)
-        this.elements = [...this.elements, ...nodes, ...edges]
+        this.setElements(elements, false)
       },
       setState(state) {
         if (typeof state.loading !== 'undefined') this.loading = state.loading
@@ -201,6 +203,7 @@ export default (id: string, preloadedState: FlowState) => {
         if (typeof state.elementsSelectable !== 'undefined') this.elementsSelectable = state.elementsSelectable
         if (typeof state.onlyRenderVisibleElements !== 'undefined')
           this.onlyRenderVisibleElements = state.onlyRenderVisibleElements
+        if (typeof state.edgesUpdatable !== 'undefined') this.edgesUpdatable = state.edgesUpdatable
         if (typeof state.nodesConnectable !== 'undefined') this.nodesConnectable = state.nodesConnectable
         if (typeof state.nodesDraggable !== 'undefined') this.nodesDraggable = state.nodesDraggable
         if (typeof state.arrowHeadColor !== 'undefined') this.arrowHeadColor = state.arrowHeadColor
@@ -220,6 +223,12 @@ export default (id: string, preloadedState: FlowState) => {
               if (typeof state.translateExtent !== 'undefined') this.setTranslateExtent(state.translateExtent)
               if (typeof state.nodeExtent !== 'undefined') this.setNodeExtent(state.nodeExtent)
             })
+        else {
+          if (typeof state.maxZoom !== 'undefined') this.setMaxZoom(state.maxZoom)
+          if (typeof state.minZoom !== 'undefined') this.setMinZoom(state.minZoom)
+          if (typeof state.translateExtent !== 'undefined') this.setTranslateExtent(state.translateExtent)
+          if (typeof state.nodeExtent !== 'undefined') this.setNodeExtent(state.nodeExtent)
+        }
       },
     },
   })

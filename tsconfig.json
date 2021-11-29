@@ -21,7 +21,8 @@
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "types": [
-      "vite/client"
+      "vite/client",
+      "cypress"
     ],
     "paths": {
       "~/*": [
@@ -40,11 +41,13 @@
     "examples/**/*.tsx",
     "examples/**/*.vue",
     "src/**/*.vue",
-    "vite.config.ts"
+    "vite.config.ts",
+    "cypress/**/*.spec.ts"
   ],
   "exclude": [
     "node_modules",
     "build",
     "dist",
+    "examples"
   ]
 }
