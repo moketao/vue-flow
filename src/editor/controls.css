@@ -5,3 +5,7 @@
 .EditorControls .n-button{
   margin: 5px;
 }
+.EditorControls .n-form-item{
+  --label-height:5px !important;
+  --feedback-height:6px !important;
+}
