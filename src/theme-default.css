@@ -71,7 +71,7 @@
 
   &.selected,
   &.selected:hover {
-    box-shadow: 0 0 0 0.5px #0041d0;
+    box-shadow: 0 0 0 1px #0041d0;
   }
 
   .vue-flow__handle {
@@ -85,7 +85,7 @@
 
   &.selected,
   &.selected:hover {
-    box-shadow: 0 0 0 0.5px #1a192b;
+    box-shadow: 0 0 0 1px #1a192b;
   }
 
   .vue-flow__handle {
@@ -99,7 +99,7 @@
 
   &.selected,
   &.selected:hover {
-    box-shadow: 0 0 0 0.5px #ff0072;
+    box-shadow: 0 0 0 1px #ff0072;
   }
 
   .vue-flow__handle {
