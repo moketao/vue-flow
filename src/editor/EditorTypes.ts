@@ -1,6 +1,7 @@
 import { CSSProperties, getCurrentInstance } from "vue";
 import { RouteLocationNormalizedLoaded, Router } from 'vue-router'
-export let selElement = ref(null);
+import { Edge, Node } from "~/types";
+export let selElement = ref<Node | Edge | null>(null);
 export interface GlobalProperties {
   $$refs: any
   $route: RouteLocationNormalizedLoaded

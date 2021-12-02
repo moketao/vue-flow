@@ -19,8 +19,7 @@ const state = useStorage(flowKey, {
 import {selElement} from "~/editor/EditorTypes";
 
 watch(()=>selElement.value,(v, oldValue, onInvalidate)=>{
-  modelValue.value = v.data.label
-  //todo: 检查为什么没有更新
+  modelValue.value = v!.data.label
 })
 
 const getNodeId = () => `randomnode_${+new Date()}`
@@ -35,7 +34,6 @@ const onSave = () => {
   if (flow.instance) {
     let inst = flow.instance;
     let ob = inst.toObject();
-    console.log(ob);
     state.value = ob;
   }
 }
@@ -73,13 +71,23 @@ const iconClean = ()=>h(Clean);
 const iconBarcodeOutlined = ()=>h(BarcodeOutlined);
 
 let onChange = (v)=>{
-  selElement.value.data.label = v;
+  selElement.value!.data!.label = v;
 }
 let modelValue = computed({get:()=> {
-  return selElement.value.data.label
+  return selElement.value!.data.label
 },set:(v)=>{
   onChange(v)
 }});
+let prop = computed({
+  get:()=>{
+    return {modelValue:modelValue.value,onChange:onChange};
+  }
+})
+let el = computed({
+  get:()=>{
+    return {componentKey:'Input',props:prop};
+  }
+})
 </script>
 <template>
   <div class="EditorControls">
@@ -88,6 +96,6 @@ let modelValue = computed({get:()=> {
     <ControlBtn tip='添加' :icon="iconAdd16Filled" @click="onAdd" />
     <ControlBtn tip='清空' :icon="iconClean" @click="onClean" />
     <ControlBtn tip='粗细' :icon="iconBarcodeOutlined" @click="emit('lineWidth')" />
-    <CompRender v-if="selElement" :element="{componentKey:'Input',props:{modelValue:modelValue,onChange:onChange}}"></CompRender>
+    <CompRender v-if="selElement" :element="el"></CompRender>
   </div>
 </template>

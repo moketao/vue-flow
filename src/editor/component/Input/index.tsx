@@ -7,40 +7,28 @@ export default {
   moduleName: 'baseWidgets',
   label: '表单项类型 - 输入框',
   preview: () => (
+    // @ts-ignore
     <NFormItem>
       <NInput placeholder="" />
     </NFormItem>
   ),
   render: ({ styles, block, props }) => {
     // const { registerRef } = useGlobalProperties()
-    console.log('###',styles,block,props);
     let rules = []
     try {
-      rules = JSON.parse(props.rules)
+      rules = JSON.parse(props.value.rules)
     } catch (e) {}
-
-    // const modelValue = computed({
-    //   get() {
-    //     return props.modelValue
-    //   },
-    //   set: (val) => (props.modelValue = val)
-    // })
-
-    let onChange = (v)=>{
-      props.modelValue = v;
-      props.onChange(v);
-    }
 
     return () => (
       <NFormItem>
         <div style={styles}>
           <NInput
             // ref={(el) => registerRef(el, block._vid)}
-            {...props}
+            {...props.value}
             type="text"
-            v-model:value={props.modelValue}
+            v-model:value={props.value.modelValue}
             // rules={rules}
-            on-update:value={onChange}
+            on-update:value={props.value.onChange}
           />
         </div>
       </NFormItem>

@@ -9,6 +9,7 @@
       "ESNext"
     ],
     "jsx": "preserve",
+    "jsxImportSource": "react",
     "declaration": true,
     "declarationDir": "./dist",
     "strict": true,
