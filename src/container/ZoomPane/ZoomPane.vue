@@ -148,6 +148,7 @@ invoke(async () => {
 
   const keyPress = useKeyPress(props.selectionKeyCode)
   d3z.filter((event: MouseEvent) => {
+    console.log(123);
     const pinchZoom = props.zoomOnPinch && event.ctrlKey
 
     // if all interactions are disabled, we prevent all zoom events
@@ -181,7 +182,8 @@ invoke(async () => {
     if (!props.paneMoveable && (event.type === 'mousedown' || event.type === 'touchstart')) return false
 
     // default filter for d3-zoom
-    return (!event.ctrlKey || event.type === 'wheel') && !event.button
+    // return (!event.ctrlKey || event.type === 'wheel') && !event.button
+    return (!event.ctrlKey || event.type === 'wheel')
   })
 })
 
