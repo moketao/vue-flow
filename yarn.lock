@@ -352,10 +352,10 @@
     "@babel/helper-validator-identifier" "^7.15.7"
     to-fast-properties "^2.0.0"
 
-"@braks/revue-draggable@^0.3.9":
-  version "0.3.9"
-  resolved "https://registry.yarnpkg.com/@braks/revue-draggable/-/revue-draggable-0.3.9.tgz#e321d368c2a398bd24e9359352056a30ce4aae0d"
-  integrity sha512-KUwydrCJeS6cH+7mUXMBbrYMD33bpxPLi++8xNQXoDw3Z85nA7BrLmy2RiOx4T6y1y14bwhG0x9Vs9k5V+yxbQ==
+"@braks/revue-draggable@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@braks/revue-draggable/-/revue-draggable-0.4.1.tgz#4727264e84e281033cef1d94498f1f5d9902f061"
+  integrity sha512-oFQnH9Zi7jaJmPSAhdtFP0OswI6GEt2rEYnnDX6zphjXiZUq0HCPlhfKnd8KCLIbi25SEynUyZOSHjcXzbc+nQ==
   dependencies:
     "@vueuse/core" "^7.0.1"
     vue-demi latest
@@ -509,13 +509,6 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
-
-"@rollup/plugin-alias@^3.1.8":
-  version "3.1.8"
-  resolved "https://registry.yarnpkg.com/@rollup/plugin-alias/-/plugin-alias-3.1.8.tgz#645fd84659e08d3d1b059408fcdf69c1dd435a6b"
-  integrity sha512-tf7HeSs/06wO2LPqKNY3Ckbvy0JRe7Jyn98bXnt/gfrxbe+AJucoNJlsEVi9sdgbQtXemjbakCpO/76JVgnHpA==
-  dependencies:
-    slash "^3.0.0"
 
 "@rollup/plugin-replace@^2.4.2":
   version "2.4.2"
