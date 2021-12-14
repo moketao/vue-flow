@@ -10,10 +10,13 @@
   "author": "Burak Cakmakoglu<brainbraks@googlemail.com>",
   "homepage": "https://vueflow.dev/",
   "exports": {
-    ".": "./dist/vue-flow.es.js",
+    ".": {
+      "default": "./dist/vue-flow.es.js",
+      "require": "./dist/vue-flow.cjs.js"
+    },
     "./*": "./*"
   },
-  "main": "./dist/vue-flow.es.js",
+  "main": "./dist/vue-flow.cjs.js",
   "types": "./dist/index.d.ts",
   "module": "./dist/vue-flow.es.js",
   "unpkg": "./dist/vue-flow.iife.js",
@@ -24,24 +27,23 @@
   "scripts": {
     "prepare": "ts-patch install -s",
     "dev": "vite",
-    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly && tsc && rimraf tmp",
-    "prepublishOnly": "vite build",
+    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly && tsc && rm -rf tmp",
+    "prepublishOnly": "yarn build",
     "test": "cypress run-ct",
     "test:open": "cypress open-ct",
     "lint:js": "eslint --ext \".js,.jsx,.ts,.tsx\" --fix --ignore-path .gitignore .",
     "lint": "yarn lint:js"
   },
   "dependencies": {
-    "@braks/revue-draggable": "^0.3.9",
-    "@rollup/plugin-alias": "^3.1.8",
+    "@braks/revue-draggable": "^0.4.1",
     "@types/d3": "^7.1.0",
-    "@types/react": "^17.0.37",
     "@vueuse/core": "^6.9.1",
     "d3": "^7.1.1",
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0"
   },
   "devDependencies": {
+    "@types/react": "^17.0.37",
     "@antfu/eslint-config": "^0.9.0",
     "@cypress/vite-dev-server": "^2.2.1",
     "@cypress/vue": "^3.0.5",
