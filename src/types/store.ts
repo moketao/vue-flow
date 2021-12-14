@@ -1,4 +1,5 @@
-import { Store } from 'pinia'
+import { ComputedRef, ToRefs } from 'vue'
+import { UnwrapNestedRefs } from '@vue/reactivity'
 import {
   Dimensions,
   ElementId,
@@ -12,35 +13,33 @@ import {
   Transform,
   XYPosition,
 } from './flow'
-import { HandleType, EdgeComponent, NodeComponent } from './components'
-import {
-  ConnectionMode,
-  OnConnectEndFunc,
-  OnConnectFunc,
-  OnConnectStartFunc,
-  OnConnectStopFunc,
-  SetConnectionId,
-} from './connection'
+import { HandleType, EdgeComponent, NodeComponent, NodeTypes, EdgeTypes } from './components'
+import { ConnectionLineType, ConnectionMode, SetConnectionId } from './connection'
 import { GraphEdge } from './edge'
 import { NodeExtent, GraphNode, TranslateExtent } from './node'
-import { D3Selection, D3Zoom, D3ZoomHandler, InitD3ZoomPayload } from './zoom'
+import { D3Selection, D3Zoom, D3ZoomHandler, InitD3ZoomPayload, KeyCode, PanOnScrollMode } from './zoom'
 import { FlowHooks } from './hooks'
 
-export interface FlowState extends Omit<FlowOptions, 'elements'> {
+export interface FlowState extends Omit<FlowOptions, 'elements' | 'id'> {
   hooks: FlowHooks
   instance?: FlowInstance
 
   elements: FlowElements
+  nodeTypes: NodeTypes
+  edgeTypes: EdgeTypes
 
   d3Zoom?: D3Zoom
   d3Selection?: D3Selection
   d3ZoomHandler?: D3ZoomHandler
   minZoom: number
   maxZoom: number
+  defaultZoom: number
   translateExtent: TranslateExtent
   nodeExtent: NodeExtent
   dimensions: Dimensions
   transform: Transform
+  onlyRenderVisibleElements: boolean
+  defaultPosition: [number, number]
 
   selectedElements?: FlowElements
   selectedNodesBbox?: Rect
@@ -48,25 +47,36 @@ export interface FlowState extends Omit<FlowOptions, 'elements'> {
   selectionActive: boolean
   userSelectionRect: SelectionRect
   multiSelectionActive: boolean
+  deleteKeyCode: KeyCode
+  selectionKeyCode: KeyCode
+  multiSelectionKeyCode: KeyCode
+  zoomActivationKeyCode: KeyCode
 
   connectionNodeId?: ElementId
   connectionHandleId?: ElementId
   connectionHandleType?: HandleType
   connectionPosition: XYPosition
   connectionMode: ConnectionMode
+  connectionLineType: ConnectionLineType
+  edgeUpdaterRadius: number
 
   snapToGrid: boolean
   snapGrid: SnapGrid
+  arrowHeadColor: string
 
   edgesUpdatable: boolean
   nodesDraggable: boolean
   nodesConnectable: boolean
   elementsSelectable: boolean
-
-  onConnect?: OnConnectFunc
-  onConnectStart?: OnConnectStartFunc
-  onConnectStop?: OnConnectStopFunc
-  onConnectEnd?: OnConnectEndFunc
+  selectNodesOnDrag: boolean
+  paneMoveable: boolean
+  zoomOnScroll: boolean
+  zoomOnPinch: boolean
+  panOnScroll: boolean
+  panOnScrollSpeed: number
+  panOnScrollMode: PanOnScrollMode
+  zoomOnDoubleClick: boolean
+  preventScrolling: boolean
 
   isReady: boolean
 
@@ -83,22 +93,22 @@ export interface FlowActions {
   setMinZoom: (zoom: number) => void
   setMaxZoom: (zoom: number) => void
   setTranslateExtent: (translateExtent: TranslateExtent) => void
-  setNodeExtent: (nodeExtent: NodeExtent) => void
   resetSelectedElements: () => void
   unsetNodesSelection: () => void
   updateSize: (size: Dimensions) => void
   setConnectionNodeId: (payload: SetConnectionId) => void
   setInteractive: (isInteractive: boolean) => void
   addElements: (elements: Elements) => void
-  setState: (state: FlowOptions) => void
+  setState: (state: Partial<FlowOptions>) => void
 }
 
 export interface FlowGetters {
-  getEdgeTypes: () => Record<string, EdgeComponent>
-  getNodeTypes: () => Record<string, NodeComponent>
-  getNodes: () => GraphNode[]
-  getEdges: () => GraphEdge[]
-  getSelectedNodes: () => GraphNode[]
+  getEdgeTypes: ComputedRef<Record<string, EdgeComponent>>
+  getNodeTypes: ComputedRef<Record<string, NodeComponent>>
+  getNodes: ComputedRef<GraphNode[]>
+  getEdges: ComputedRef<GraphEdge[]>
+  getSelectedNodes: ComputedRef<GraphNode[]>
 }
 
-export type FlowStore = Store<string, FlowState, FlowGetters, FlowActions>
+export type Store = { id: string; state: FlowState } & ToRefs<FlowState> & FlowActions & FlowGetters
+export type FlowStore = UnwrapNestedRefs<Store>

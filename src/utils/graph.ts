@@ -11,11 +11,12 @@ import {
   FlowExportObject,
   NodeExtent,
   Dimensions,
-  FlowStore,
   GraphNode,
   FlowElements,
   GraphEdge,
   NextElements,
+  FlowStore,
+  FlowState,
 } from '~/types'
 import { useWindow } from '~/composables'
 import { getSourceTargetNodes } from '~/utils/edge'
@@ -96,7 +97,7 @@ const connectionExists = (edge: Edge, elements: Elements) => {
 
 export const addEdge = (edgeParams: Edge | Connection, elements: Elements) => {
   if (!edgeParams.source || !edgeParams.target) {
-    console.log("Can't create edge. An edge needs a source and a target.")
+    console.warn("Can't create edge. An edge needs a source and a target.")
     return elements
   }
 
@@ -278,7 +279,7 @@ export const getConnectedEdges = (nodes: GraphNode[], edges: GraphEdge[]) => {
 
 export const onLoadGetElements = (currentStore: FlowStore) => (): FlowElements => currentStore.elements
 
-export const onLoadToObject = (currentStore: FlowStore) => (): FlowExportObject => {
+export const onLoadToObject = (currentStore: FlowState) => (): FlowExportObject => {
   // we have to stringify/parse so objects containing refs (like nodes and edges) can potentially be saved in a storage
   return JSON.parse(
     JSON.stringify({

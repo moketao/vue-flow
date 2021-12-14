@@ -23,7 +23,7 @@ export default defineConfig({
     minify: 'esbuild',
     emptyOutDir: false,
     lib: {
-      formats: ['es', 'iife'],
+      formats: ['es', 'iife', 'cjs'],
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'vueFlow',
     },
@@ -31,6 +31,9 @@ export default defineConfig({
       // make sure to externalize deps that shouldn't be bundled
       // into your library
       external: ['vue'],
+      // plugins:[
+      //   resolve()
+      // ],
       output: {
         dir: './dist',
         // Provide global variables to use in the UMD build
@@ -55,14 +58,21 @@ export default defineConfig({
     }),
     copy({
       targets: [
-        {
-          src: 'src/theme-default.css',
-          dest: 'dist',
-        },
+        // {
+        //   src: 'src/theme-default.css',
+        //   dest: 'dist',
+        // },
       ],
     }),
   ],
   optimizeDeps: {
-    include: ['vue', '@vueuse/core', '@braks/revue-draggable'],
+    include: ['vue', '@vueuse/core', '@braks/revue-draggable', 'd3-zoom', 'd3-selection'],
   },
+  css:{
+    preprocessorOptions:{
+      less:{
+
+      }
+    }
+  }
 })

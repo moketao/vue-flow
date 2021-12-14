@@ -60,10 +60,14 @@ import { $$dropdown, DropdownOption } from '@/visual-editor/utils/dropdown-servi
 import CompRender from './comp-render'
 import SlotItem from './slot-item.vue'
 import MonacoEditor from '@/visual-editor/components/common/monaco-editor/MonacoEditor'
-import { cloneDeep } from 'lodash'
 import { useVisualData } from '@/visual-editor/hooks/useVisualData'
+// import { cloneDeep } from "lodash";
 import { useModal } from '@/visual-editor/hooks/useModal'
 import { generateNanoid } from '@/visual-editor/utils'
+
+function cloneDeep2(v){
+  return JSON.parse( JSON.stringify(v) );
+}
 
 export default defineComponent({
   name: 'SimulatorEditor',
@@ -203,7 +207,7 @@ export default defineComponent({
                         })
                       }
                     }
-                    const blockCopy = cloneDeep(parentBlocks[index])
+                    const blockCopy = cloneDeep2(parentBlocks[index])
                     setBlockVid(blockCopy)
                     parentBlocks.splice(index + 1, 0, blockCopy)
                   }

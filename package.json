@@ -1,6 +1,6 @@
 {
   "name": "@braks/vue-flow",
-  "version": "0.2.2",
+  "version": "0.3.2",
   "private": false,
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
     "prepare": "ts-patch install -s",
     "dev": "vite",
     "build": "vite build && vue-tsc --declaration --emitDeclarationOnly && tsc && rimraf tmp",
-    "prepublishOnly": "yarn build",
+    "prepublishOnly": "vite build",
     "test": "cypress run-ct",
     "test:open": "cypress open-ct",
     "lint:js": "eslint --ext \".js,.jsx,.ts,.tsx\" --fix --ignore-path .gitignore .",
@@ -33,13 +33,15 @@
   },
   "dependencies": {
     "@braks/revue-draggable": "^0.3.9",
+    "@rollup/plugin-alias": "^3.1.8",
     "@types/d3": "^7.1.0",
+    "@types/react": "^17.0.37",
     "@vueuse/core": "^6.9.1",
     "d3": "^7.1.1",
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
-    "microdiff": "^1.2.0",
-    "pinia": "^2.0.0-rc.10"
+    "naive-ui": "^2.21.5",
+    "rollup-plugin-node-resolve": "^5.2.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^0.9.0",
@@ -66,7 +68,7 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-chai-friendly": "^0.7.2",
     "eslint-plugin-prettier": "^3.4.1",
-    "naive-ui": "^2.21.1",
+    "less": "^4.1.2",
     "np": "^7.5.0",
     "postcss-nested": "^5.0.6",
     "prettier": "^2.4.1",
