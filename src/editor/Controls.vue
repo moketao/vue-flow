@@ -78,15 +78,11 @@ let modelValue = computed({get:()=> {
 },set:(v)=>{
   onChange(v)
 }});
-let prop = computed({
-  get:()=>{
+let prop = computed(()=>{
     return {modelValue:modelValue.value,onChange:onChange};
-  }
 })
-let el = computed({
-  get:()=>{
+let el = computed(()=>{
     return {componentKey:'Input',props:prop};
-  }
 })
 </script>
 <template>

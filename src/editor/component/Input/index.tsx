@@ -1,6 +1,5 @@
 import type { VisualEditorComponent } from '../../EditorTypes'
 import { useGlobalProperties , createFieldProps} from '../../EditorTypes'
-import {defineEmits} from 'vue'
 import {NFormItem , NInput} from "naive-ui";
 
 export default {
@@ -12,16 +11,11 @@ export default {
     <NFormItem><NInput placeholder="" /></NFormItem>
   ),
   render: ({ styles, block, props }) => {
-    // const { registerRef } = useGlobalProperties()
-    let rules = []
-    try {
-      rules = JSON.parse(props.value.rules)
-    } catch (e) {}
-
+    const { registerRef } = useGlobalProperties()
     return () => (
     // @ts-ignore
       <NFormItem><div style={styles}><NInput
-            // ref={(el) => registerRef(el, block._vid)}
+            ref={(el) => registerRef(el, block._vid)}
             {...props.value}
             type="text"
             v-model:value={props.value.modelValue}

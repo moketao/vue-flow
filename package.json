@@ -1,6 +1,6 @@
 {
   "name": "@braks/vue-flow",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "private": false,
   "repository": {
     "type": "git",
@@ -28,7 +28,7 @@
     "prepare": "ts-patch install -s",
     "dev": "vite",
     "build": "vite build && vue-tsc --declaration --emitDeclarationOnly && tsc && rm -rf tmp",
-    "prepublishOnly": "yarn build",
+    "prepublishOnly": "vite build",
     "test": "cypress run-ct",
     "test:open": "cypress open-ct",
     "lint:js": "eslint --ext \".js,.jsx,.ts,.tsx\" --fix --ignore-path .gitignore .",
