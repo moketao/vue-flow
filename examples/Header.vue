@@ -14,7 +14,7 @@ const onChange = (event: any) => {
     <select v-model="route.path" @change="onChange">
       <template v-for="r of routes" :key="r.path">
         <option v-if="r.path !== '/'" :value="r.path">
-          {{ r.path.substr(1, r.path.length) }}
+          {{ r.path.slice(1, r.path.length) }}
         </option>
       </template>
     </select>

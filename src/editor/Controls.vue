@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useZoomPanHelper, FlowExportObject, Node, useVueFlow, Position, ArrowHeadType } from "../index";
+import { useZoomPanHelper, FlowExportObject, Node, useVueFlow, Position, ArrowHeadType, Edge } from "../index";
 import { NIcon, NSpace, NCard, NButton, NTooltip} from 'naive-ui'
 import { SaveTwotone, BarcodeOutlined } from '@vicons/antd'
 import { RestoreTwotone } from '@vicons/material'
@@ -19,7 +19,7 @@ const state = useStorage(flowKey, {
 import {selElement} from "~/editor/EditorTypes";
 
 watch(()=>selElement.value,(v, oldValue, onInvalidate)=>{
-  modelValue.value = v!.data.label
+  modelValue.value = (v as Edge)!.data.label
 })
 
 const getNodeId = () => `randomnode_${+new Date()}`

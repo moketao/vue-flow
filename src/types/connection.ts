@@ -1,4 +1,4 @@
-import { ElementId, Position } from './flow'
+import { ArrowHeadType, ElementId, Position } from "./flow";
 import { HandleType } from './components'
 
 export enum ConnectionLineType {
@@ -13,6 +13,8 @@ export interface Connection {
   target: ElementId
   sourceHandle?: ElementId
   targetHandle?: ElementId
+  data:Object
+  arrowHeadType:ArrowHeadType
 }
 
 export type ConnectionLineProps = {

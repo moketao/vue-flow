@@ -1,7 +1,7 @@
 import { CSSProperties, getCurrentInstance } from "vue";
 import { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import { Edge, Node } from "~/types";
-export let selElement = ref<Node | Edge | null>(null);
+export let selElement = ref<any>(null);
 export interface GlobalProperties {
   $$refs: any
   $route: RouteLocationNormalizedLoaded
@@ -57,7 +57,17 @@ export function createVisualEditorConfig() {
 
 export type VisualEditorConfig = ReturnType<typeof createVisualEditorConfig>
 
+let hasInitGlobal = false;
+function initGlobalProp(){
+  hasInitGlobal = true;
+  const globalProperties = getCurrentInstance()!.appContext.config.globalProperties
+  globalProperties.$$refs = {}
+  window.$$refs = globalProperties.$$refs
+}
 export const useGlobalProperties = ()=>{
+  if(!hasInitGlobal){
+    initGlobalProp();
+  }
   const globalProperties = getCurrentInstance()!.appContext.config
     .globalProperties as GlobalProperties
 

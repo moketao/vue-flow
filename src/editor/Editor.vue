@@ -11,6 +11,7 @@ const onElementsRemove = (elementsToRemove: Elements) => {
   elements.value = removeElements(elementsToRemove, elements.value)
 }
 import {selElement} from './EditorTypes'
+import { CSSProperties } from "vue";
 const onElementsSel = ({event: MouseEvent, element: el}) => {
   selElement.value = el;
 }
@@ -21,18 +22,19 @@ const onRestore = (els: Elements) => {
   )
 }
 const changeLineWidth = (e) => {
-  elements.value = elements.value.map((el) => {
+  elements.value = elements.value.map((el:Edge) => {
     if (isEdge(el)){
       if(!el.style) {
         el.style = {strokeWidth:1};
         return el;
       }else{
-        let strokeWidth = el.style.strokeWidth+1;
+        let style = el!.style! as CSSProperties;
+        let strokeWidth = (parseInt(style.strokeWidth+'')|1) + 1;
         strokeWidth = strokeWidth> 2 ?1:strokeWidth;
-        el.style.strokeWidth = strokeWidth;
+        style.strokeWidth = strokeWidth;
         return {
           ...el,
-          style: {...el.style, strokeWidth},
+          style: {...style, strokeWidth},
         }
       }
     }else{
@@ -41,7 +43,9 @@ const changeLineWidth = (e) => {
   })
 }
 const onConnect = (params: Edge | Connection) =>{
+  if(params.source === params.target) return;
   params.arrowHeadType = ArrowHeadType.ArrowClosed;
+  params.data = {label:''};
   addEdge(params, elements.value);
 }
 </script>
