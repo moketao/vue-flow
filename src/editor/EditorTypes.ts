@@ -61,8 +61,8 @@ let hasInitGlobal = false;
 function initGlobalProp(){
   hasInitGlobal = true;
   const globalProperties = getCurrentInstance()!.appContext.config.globalProperties
-  globalProperties.$$refs = {}
-  window.$$refs = globalProperties.$$refs
+  globalProperties.$$refs = {} as any
+  (window as any).$$refs = globalProperties.$$refs
 }
 export const useGlobalProperties = ()=>{
   if(!hasInitGlobal){

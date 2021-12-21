@@ -14,7 +14,7 @@ export default {
     const { registerRef } = useGlobalProperties()
     return () => (
     // @ts-ignore
-      <NFormItem><div style={styles}><NInput
+      <NFormItem label="标题"><div style={styles}><NInput
             ref={(el) => registerRef(el, block._vid)}
             {...props.value}
             type="text"

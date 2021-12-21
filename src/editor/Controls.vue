@@ -6,7 +6,6 @@ import { RestoreTwotone } from '@vicons/material'
 import { Add16Filled } from '@vicons/fluent'
 import { Clean } from '@vicons/carbon'
 import ControlBtn from './ControlBtn.vue'
-import CompRender from './comp-render.tsx'
 import './controls.css'
 
 const flowKey = 'example-flow2'
@@ -16,11 +15,6 @@ const state = useStorage(flowKey, {
   zoom: 1,
 } as FlowExportObject)
 
-import {selElement} from "~/editor/EditorTypes";
-
-watch(()=>selElement.value,(v, oldValue, onInvalidate)=>{
-  labelValue.value = (v as Edge)!.data.label
-})
 
 const getNodeId = () => `randomnode_${+new Date()}`
 
@@ -69,21 +63,6 @@ const iconRestoreTwotone = ()=>h(RestoreTwotone);
 const iconAdd16Filled = ()=>h(Add16Filled);
 const iconClean = ()=>h(Clean);
 const iconBarcodeOutlined = ()=>h(BarcodeOutlined);
-
-let onChange = (v)=>{
-  selElement.value!.data!.label = v;
-}
-let labelValue = computed({get:()=> {
-  return selElement.value!.data.label
-},set:(v)=>{
-  onChange(v)
-}});
-let prop = computed(()=>{
-    return {value:labelValue.value,onChange:onChange};
-})
-let el = computed(()=>{
-    return {uiKey:'Input',props:prop};
-})
 </script>
 <template>
   <div class="EditorControls">
@@ -92,6 +71,5 @@ let el = computed(()=>{
     <ControlBtn tip='添加' :icon="iconAdd16Filled" @click="onAdd" />
     <ControlBtn tip='清空' :icon="iconClean" @click="onClean" />
     <ControlBtn tip='粗细' :icon="iconBarcodeOutlined" @click="emit('lineWidth')" />
-    <CompRender v-if="selElement" :element="el"></CompRender>
   </div>
 </template>

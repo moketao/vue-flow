@@ -138,7 +138,7 @@ const onDrop = (event: DragEvent) => {
       </template>
       <Controls @restore="onRestore" @lineWidth="changeLineWidth" />
     </VueFlow>
-    <RightPanel :titles="['图形属性','常规设置','参与人列表','执行策略','邮件通知','高级设置','事件','执行情况']"/>
+    <RightPanel :titles="['常规设置','参与人列表','执行策略','邮件通知','高级设置','事件','执行情况']"/>
   </div>
 </template>
 

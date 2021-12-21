@@ -3,12 +3,41 @@
     <div class="tabs">
       <RightTab :titleNow="titleNow" @click="onTabClick(title)" v-for="title in titles" :title="title" v-model:show="show"/>
     </div>
-      <div class="panel">{{titleNow}}</div>
+      <div class="panel">
+<!--        <div>{{titleNow}}</div>-->
+        <div class="inputs" v-show="titleNow==='常规设置'">
+          <CompRender v-if="selElement" :element="el"></CompRender>
+        </div>
+      </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import CompRender from '../comp-render.tsx'
 import RightTab from "./RightTab.vue";
+import { selElement } from "~/editor/EditorTypes";
+import { Edge } from "~/types";
+
+watch(()=>selElement.value,(v, oldValue, onInvalidate)=>{
+  console.log(v);
+  labelValue.value = (v as Edge)!.data.label
+})
+let onChange = (v)=>{
+  selElement.value!.data!.label = v;
+}
+let labelValue = computed({get:()=> {
+    return selElement.value!.data.label
+  },set:(v)=>{
+    onChange(v)
+  }});
+let prop = computed(()=>{
+  return {value:labelValue.value,onChange:onChange};
+})
+let el = computed(()=>{
+  console.log(prop);
+  return {uiKey:'Input',props:prop};
+})
+
 let zIndex = ref(333);
 let props = defineProps({
   titles:{
@@ -76,5 +105,10 @@ watch(()=>props.show,(v)=> {
 .move-leave-active{
   transition: right 0.3s ease-out;
 }
-
+.inputs{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
 </style>

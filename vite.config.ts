@@ -17,7 +17,7 @@ export default defineConfig({
       '@': resolve('src'),
     },
     dedupe: ['vue'],
-    extensions: ['.ts', '.vue'],
+    extensions: ['.ts','.tsx','.vue'],
   },
   build: {
     minify: 'esbuild',
