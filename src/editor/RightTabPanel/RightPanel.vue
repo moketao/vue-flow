@@ -6,37 +6,50 @@
       <div class="panel">
 <!--        <div>{{titleNow}}</div>-->
         <div class="inputs" v-show="titleNow==='常规设置'">
-          <CompRender v-if="selElement" :element="el"></CompRender>
+          <CompRender v-if="selElement" :element="el" v-for="el in comList" :key="Math.random()+''"></CompRender>
         </div>
       </div>
   </div>
 </template>
 
 <script setup lang="ts">
+//@ts-ignore
 import CompRender from '../comp-render.tsx'
 import RightTab from "./RightTab.vue";
 import { selElement } from "~/editor/EditorTypes";
 import { Edge } from "~/types";
-
+import { ComputedRef } from 'vue'
+let comList = ref<ComputedRef[]>([]);
 watch(()=>selElement.value,(v, oldValue, onInvalidate)=>{
-  console.log(v);
-  labelValue.value = (v as Edge)!.data.label
+  let data = (v as Edge)!.data;
+  if(!data) return;
+  comList.value.splice(0,comList.value.length);
+  for(let k in data){
+    bind(k,data[k]);
+  }
 })
-let onChange = (v)=>{
-  selElement.value!.data!.label = v;
+function bind(k: string, val: any) {
+  let labelValue = computed({get:()=> {
+      return selElement.value!.data[k]
+    },set:(v)=>{
+      onChange(v)
+    }});
+  let onChange = (v)=>{
+    selElement.value!.data![k] = v;
+  }
+  let prop = computed(()=>{
+    return {value:labelValue.value,onChange:onChange};
+  })
+  let el = computed(()=>{
+    return {uiKey:'Input',props:prop};
+  })
+  labelValue.value = val
+  comList.value.push(el);
 }
-let labelValue = computed({get:()=> {
-    return selElement.value!.data.label
-  },set:(v)=>{
-    onChange(v)
-  }});
-let prop = computed(()=>{
-  return {value:labelValue.value,onChange:onChange};
-})
-let el = computed(()=>{
-  console.log(prop);
-  return {uiKey:'Input',props:prop};
-})
+
+
+
+
 
 let zIndex = ref(333);
 let props = defineProps({

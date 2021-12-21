@@ -1,6 +1,7 @@
 import { defineComponent, PropType } from 'vue'
 import type { VisualEditorBlockData } from './EditorTypes'
 import { visualConfig } from './visual.config'
+import { unref,toRaw } from "vue";
 
 export default defineComponent({
   name: 'CompRender',
@@ -11,11 +12,14 @@ export default defineComponent({
     }
   },
   setup(props) {
-    return visualConfig.componentMap[props.element.uiKey].render({
-      styles: props.element.styles || {},
-      props: props.element.props || {},
+    let el = props.element.value;
+    let uiKey = el.uiKey;
+    console.log(uiKey)
+    return visualConfig.componentMap[uiKey].render({
+      styles: el.styles || {},
+      props: el.props || {},
       model: {},
-      block: props.element,
+      block: el,
       custom: {}
     })
   }
