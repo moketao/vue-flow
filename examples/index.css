@@ -3,11 +3,11 @@
 body {
   color: #111;
   padding: 5px;
+  overflow: hidden;
 }
 
 #root {
-  text-transform: uppercase;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: -apple-system,BlinkMacSystemFont,Helvetica Neue,PingFang SC,Microsoft YaHei,Source Han Sans SC,Noto Sans CJK SC,WenQuanYi Micro Hei,sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;

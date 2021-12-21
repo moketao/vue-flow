@@ -19,7 +19,7 @@ const state = useStorage(flowKey, {
 import {selElement} from "~/editor/EditorTypes";
 
 watch(()=>selElement.value,(v, oldValue, onInvalidate)=>{
-  modelValue.value = (v as Edge)!.data.label
+  labelValue.value = (v as Edge)!.data.label
 })
 
 const getNodeId = () => `randomnode_${+new Date()}`
@@ -73,16 +73,16 @@ const iconBarcodeOutlined = ()=>h(BarcodeOutlined);
 let onChange = (v)=>{
   selElement.value!.data!.label = v;
 }
-let modelValue = computed({get:()=> {
+let labelValue = computed({get:()=> {
   return selElement.value!.data.label
 },set:(v)=>{
   onChange(v)
 }});
 let prop = computed(()=>{
-    return {modelValue:modelValue.value,onChange:onChange};
+    return {value:labelValue.value,onChange:onChange};
 })
 let el = computed(()=>{
-    return {componentKey:'Input',props:prop};
+    return {uiKey:'Input',props:prop};
 })
 </script>
 <template>

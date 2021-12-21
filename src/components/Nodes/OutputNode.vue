@@ -24,7 +24,7 @@ export default {
 <template>
   <slot v-bind="props">
     <component :is="props.data?.label" v-if="typeof props.data?.label !== 'string'" />
-    <span v-else v-html="props.data?.label"></span>
+    <span class="span" v-else v-html="props.data?.label"></span>
   </slot>
   <Handle
     type="source"
@@ -33,3 +33,10 @@ export default {
     :is-valid-connection="props.isValidTargetPos"
   />
 </template>
+<style scoped>
+.span{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>

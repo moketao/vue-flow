@@ -44,34 +44,39 @@
   cursor: grab;
 }
 
-.vue-flow__node-default,
-.vue-flow__node-input,
-.vue-flow__node-output {
-  padding: 10px;
+.vue-flow__node-default, .vue-flow__node-input, .vue-flow__node-output, .vue-flow__node-gateway {
   border-radius: 3px;
   width: 150px;
+  min-height: 200px;
   font-size: 12px;
   color: #222;
   text-align: center;
-  border-width: 1px;
+  border-width: 2px;
   border-style: solid;
+  display: flex;
+  justify-content: center;
+  align-content: center;
 }
-
-.vue-flow__node-default.selectable,
-.vue-flow__node-input.selectable,
-.vue-flow__node-output.selectable {
-  &:hover {
-    box-shadow: 0 1px 4px 1px rgba(0, 0, 0, 0.08);
-  }
+.vue-flow__node-input, .vue-flow__node-output, .vue-flow__node-gateway {
+  border-radius: 100%;
+  width: 66px;
+  height: 66px;
+  min-height: 66px;
 }
-
+.vue-flow__node-default.selectable:hover{
+  box-shadow: 0 0 0 5px rgba(6, 88, 182, 0.5);
+}
+.vue-flow__node-input.selectable:hover, .vue-flow__node-output.selectable:hover {
+  box-shadow: 0 0 0 5px rgba(73, 66, 84, 0.2);
+}
 .vue-flow__node-input {
   background: #fff;
   border-color: #0041d0;
+  transition: box-shadow 0.3s;
 
   &.selected,
   &.selected:hover {
-    box-shadow: 0 0 0 1px #0041d0;
+    box-shadow: 0 0 0 3px #0041d0;
   }
 
   .vue-flow__handle {
@@ -82,24 +87,27 @@
 .vue-flow__node-default {
   background: #fff;
   border-color: #1a192b;
+  box-shadow: 0 0 0 1px #1a192b;
+  transition: box-shadow 0.3s;
 
   &.selected,
   &.selected:hover {
-    box-shadow: 0 0 0 1px #1a192b;
+    box-shadow: 0 0 0 3px #1c447c;
   }
 
   .vue-flow__handle {
-    background: #1a192b;
+    background: #566f85;
   }
 }
 
 .vue-flow__node-output {
   background: #fff;
   border-color: #ff0072;
+  transition: box-shadow 0.3s;
 
   &.selected,
   &.selected:hover {
-    box-shadow: 0 0 0 1px #ff0072;
+    box-shadow: 0 0 0 3px #ff0072;
   }
 
   .vue-flow__handle {
@@ -114,8 +122,8 @@
 
 .vue-flow__handle {
   position: absolute;
-  width: 6px;
-  height: 6px;
+  width: 12px;
+  height: 12px;
   background: #555;
   border: 1px solid white;
   border-radius: 100%;

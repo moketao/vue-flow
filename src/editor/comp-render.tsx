@@ -11,7 +11,7 @@ export default defineComponent({
     }
   },
   setup(props) {
-    return visualConfig.componentMap[props.element.componentKey].render({
+    return visualConfig.componentMap[props.element.uiKey].render({
       styles: props.element.styles || {},
       props: props.element.props || {},
       model: {},

@@ -69,7 +69,7 @@ export const initialState = (): FlowState => ({
     draw: false,
   },
 
-  arrowHeadColor: '#b1b1b7',
+  arrowHeadColor: '#000000',//箭头颜色
   connectionLineStyle: {},
   connectionLineType: ConnectionLineType.Bezier,
   connectionNodeId: undefined,

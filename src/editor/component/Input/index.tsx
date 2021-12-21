@@ -18,7 +18,7 @@ export default {
             ref={(el) => registerRef(el, block._vid)}
             {...props.value}
             type="text"
-            v-model:value={props.value.modelValue}
+            v-model:value={props.value.value}
             // rules={rules}
             on-update:value={props.value.onChange}
           />

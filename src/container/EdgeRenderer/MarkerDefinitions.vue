@@ -23,7 +23,7 @@ export default {
         stroke-linejoin="round"
         stroke-width="1"
         :fill="props.color"
-        points="-11,-6 0,0 -11,6 -11,-6"
+        points="-5,-4 0,0 -5,4 -5,-4"
       />
     </Marker>
     <Marker id="vue-flow__arrow">
@@ -33,7 +33,7 @@ export default {
         stroke-linejoin="round"
         stroke-width="1.5"
         fill="none"
-        points="-11,-6 0,0 -11,6"
+        points="-5,-4 0,0 -5,4"
       />
     </Marker>
   </defs>

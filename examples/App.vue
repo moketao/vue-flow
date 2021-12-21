@@ -3,7 +3,7 @@ import Header from './Header.vue'
 </script>
 <template>
   <Header />
-  <div style="height: calc(100% - 152px)">
+  <div style="height: calc(100% - 40px)">
     <router-view />
   </div>
 </template>

@@ -124,7 +124,7 @@ export interface VisualEditorBlockData {
   /** 组件所属的模块（基础组件、容器组件） */
   moduleName: keyof ComponentModules
   /** 映射 VisualEditorConfig 中 componentMap 的 component对象 */
-  componentKey: string
+  uiKey: string
   /** 组件标签名称 */
   label: string
   /** 是否需要调整位置 */
