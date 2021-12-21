@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import Handle from '../Handle/Handle.vue'
 import { NodeProps, Position, ValidConnectionFunc } from '../../types'
+import { NProgress } from "naive-ui";
 
 interface DefaultNodeProps extends NodeProps {
   data?: NodeProps['data']
@@ -33,7 +34,19 @@ export default {
   />
   <slot v-bind="props">
     <component :is="props.data?.label" v-if="typeof props.data?.label !== 'string'" />
-    <span class="span" v-else v-html="props.data?.label"></span>
+    <div class="wrap" v-else>
+      <span class="span" v-html="props.data?.label"></span>
+      <div class="body" style="padding: 5px">
+        <NProgress
+          type="line"
+          v-if="props.data?.progress"
+          :percentage="props.data?.progress"
+          :indicator-placement="'inside'"
+          processing
+        />
+        <div class="man" v-html="m" v-for="m in props.data?.man"></div>
+      </div>
+    </div>
   </slot>
   <Handle
     type="source"
@@ -43,6 +56,11 @@ export default {
   />
 </template>
 <style scoped>
+.wrap{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
 .span{
   display: flex;
   background-color: #13599b;
@@ -53,5 +71,14 @@ export default {
   border-top-right-radius: 3px;
   border-top: 2px solid #1c80c0;
   justify-content: center;
+}
+.body{
+  display: flex;
+  flex-direction: column;
+}
+.man{
+  border: 1px solid #ececec;
+  border-top: 0;
+  margin-bottom: 2px;
 }
 </style>

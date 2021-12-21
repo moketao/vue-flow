@@ -1,12 +1,15 @@
 <template>
-  <div :class="['PanelWrap',{show}]" :style="{zIndex}">
+  <div :class="['PanelWrap cus',{show}]" :style="{zIndex}">
     <div class="tabs">
       <RightTab :titleNow="titleNow" @click="onTabClick(title)" v-for="title in titles" :title="title" v-model:show="show"/>
     </div>
       <div class="panel">
 <!--        <div>{{titleNow}}</div>-->
         <div class="inputs" v-show="titleNow==='常规设置'">
-          <CompRender v-if="selElement" :element="el" v-for="el in comList" :key="Math.random()+''"></CompRender>
+          <CompRender class="com" v-if="selElement" :element="el" v-for="el in comList" :key="Math.random()+''"></CompRender>
+        </div>
+        <div class="inputs" v-show="titleNow==='参与人列表'">
+          <CompRender class="com" v-if="selElement" :element="el" v-for="el in comList2" :key="Math.random()+''"></CompRender>
         </div>
       </div>
   </div>
@@ -14,21 +17,28 @@
 
 <script setup lang="ts">
 //@ts-ignore
-import CompRender from '../comp-render.tsx'
+import CompRender from "../comp-render.tsx";
 import RightTab from "./RightTab.vue";
 import { selElement } from "~/editor/EditorTypes";
 import { Edge } from "~/types";
-import { ComputedRef } from 'vue'
+import { ComputedRef } from "vue";
+
 let comList = ref<ComputedRef[]>([]);
+let comList2 = ref<ComputedRef[]>([]);
 watch(()=>selElement.value,(v, oldValue, onInvalidate)=>{
   let data = (v as Edge)!.data;
   if(!data) return;
   comList.value.splice(0,comList.value.length);
+  comList2.value.splice(0,comList2.value.length);
   for(let k in data){
-    bind(k,data[k]);
+    if(k=='man'){
+      bind(k,data[k],comList2)
+    }else{
+      bind(k,data[k],comList);
+    }
   }
 })
-function bind(k: string, val: any) {
+function bind(k: string, val: any, list) {
   let labelValue = computed({get:()=> {
       return selElement.value!.data[k]
     },set:(v)=>{
@@ -38,17 +48,22 @@ function bind(k: string, val: any) {
     selElement.value!.data![k] = v;
   }
   let prop = computed(()=>{
-    return {value:labelValue.value,onChange:onChange};
+    return {value:labelValue.value,onUpdateValue:onChange,valueKey:k};
   })
   let el = computed(()=>{
-    return {uiKey:'Input',props:prop};
+    let key = getUIKey(val);
+    return {uiKey:key,props:prop};
   })
   labelValue.value = val
-  comList.value.push(el);
+  list.value.push(el);
 }
 
-
-
+function getUIKey(v){
+  if(Array.isArray(v)) return 'InputArray'
+  if(typeof v === 'string') return 'Input';
+  if(typeof v === 'number') return 'InputNumber';
+  return 'Input';
+}
 
 
 let zIndex = ref(333);
@@ -65,8 +80,7 @@ function onTabClick(t){
   titleNow.value = t;
 }
 watch(()=>props.show,(v)=> {
-  let tmp = props.show?1333:333;
-  zIndex.value = tmp;
+  zIndex.value = props.show ? 1333 : 333;
 });
 </script>
 
@@ -123,5 +137,13 @@ watch(()=>props.show,(v)=> {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+.com{
+  width: 100%;
+}
+</style>
+<style>
+.PanelWrap.cus .n-form-item-label{
+  color: #b7bbc0;
 }
 </style>

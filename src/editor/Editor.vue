@@ -102,13 +102,33 @@ const onDrop = (event: DragEvent) => {
     offY = 33;
   }
   const position = flowInstance.value!.project({ x: event.offsetX-offX, y: event.offsetY-offY })
+  let data = { label: `${getCn(type)}` };
+  switch (type) {
+    case 'default':{
+      //@ts-ignore
+      data.progress = 0;
+      data.man = [];
+      break
+    }
+    case 'input':{
+      break
+    }
+    case 'output':{
+      break
+    }
+    case 'gateway':{
+      break
+    }
+    default:
+      break
+  }
   const newNode = {
     id: getId(),
     type,
     position,
     targetPosition: Position.Left,
     sourcePosition: Position.Right,
-    data: { label: `${getCn(type)}` },
+    data: data,
   } as Node
   elements.value.push(newNode)
 }

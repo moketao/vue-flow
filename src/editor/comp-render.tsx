@@ -14,7 +14,6 @@ export default defineComponent({
   setup(props) {
     let el = props.element.value;
     let uiKey = el.uiKey;
-    console.log(uiKey)
     return visualConfig.componentMap[uiKey].render({
       styles: el.styles || {},
       props: el.props || {},

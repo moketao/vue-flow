@@ -1,20 +1,20 @@
 import type { VisualEditorComponent } from '../../EditorTypes'
 import { useGlobalProperties , createFieldProps} from '../../EditorTypes'
-import {NFormItem , NInput} from "naive-ui";
+import {NFormItem , NInputNumber} from "naive-ui";
 
 export default {
-  key: 'Input',
+  key: 'InputNumber',
   moduleName: 'baseWidgets',
   label: '表单项类型 - 输入框',
   preview: () => (
     // @ts-ignore
-    <NFormItem><NInput placeholder="" /></NFormItem>
+    <NFormItem><NInputNumber placeholder="" /></NFormItem>
   ),
   render: ({ styles, block, props }) => {
     const { registerRef } = useGlobalProperties()
     return () => (
     // @ts-ignore
-      <NFormItem label={props.value.valueKey} style={styles}><NInput
+      <NFormItem label={props.value.valueKey} style={styles}><NInputNumber
             ref={(el) => registerRef(el, block._vid)}
             {...props.value}
             type="text"
