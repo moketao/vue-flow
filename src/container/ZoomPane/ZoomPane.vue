@@ -94,6 +94,8 @@ nextTick(async () => {
       d3z.on('zoom', (event: D3ZoomEvent<HTMLDivElement, any>) => {
         if (viewChanged(transform.value, event.transform)) {
           const flowTransform = eventToFlowTransform(event.transform)
+          flowTransform.x = flowTransform.x||0;
+          flowTransform.y = flowTransform.y||0;
           transform.value = flowTransform
           store.hooks.move.trigger(flowTransform)
         }

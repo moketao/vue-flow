@@ -24,7 +24,8 @@ const elements = ref(initialElements)
 import {selElement} from './EditorTypes'
 import { CSSProperties } from "vue";
 import EditorToolbar from "~/editor/EditorToolbar.vue";
-const onElementsSel = ({event: MouseEvent, element: el}) => {
+import { nodeType } from "~/editor/const_var";
+const onElementsSel = ({event: MouseEvent, node: el}) => {
   selElement.value = el;
 }
 const onRestore = (els: Elements) => {
@@ -55,13 +56,13 @@ const changeLineWidth = (e) => {
   })
 }
 const flowInstance = ref<FlowInstance>()
-let id = 0
-const getId = (): ElementId => `dndnode_${id++}`
+let id = 1
+const getId = (): ElementId => `${id++}`
 const onConnect = (params: Edge | Connection) =>{
   if(params.source === params.target) return;
   params.arrowHeadType = ArrowHeadType.ArrowClosed;
   params.data = {label:'title'};
-  params.type = 'custom';
+  params.type = 'line';
   console.log(params);
   addEdge(params, elements.value);
 }
@@ -132,6 +133,7 @@ const onDrop = (event: DragEvent) => {
   } as Node
   elements.value.push(newNode)
 }
+let node_type = nodeType;
 </script>
 <template>
   <div class="EditorWrap" @drop="onDrop">
@@ -140,17 +142,17 @@ const onDrop = (event: DragEvent) => {
       v-model="elements"
       storage-key="example-flow-1231"
       :node-types="['gateway']"
-      :edge-types="['custom', 'custom2']"
+      :edge-types="[node_type.line, 'custom2']"
       @connect="onConnect"
       @elements-remove="onElementsRemove"
-      @elementClick="onElementsSel"
+      @node-drag-stop="onElementsSel"
       @load="onLoad"
       @dragover="onDragOver"
     >
       <template #node-gateway="props">
         <GatewayNode v-bind="props" />
       </template>
-      <template #edge-custom="props">
+      <template #edge-line="props">
         <CustomEdge v-bind="props" />
       </template>
       <template #edge-custom2="props">

@@ -77,7 +77,10 @@ export type FlowExportObject<T = any> = {
   position: [number, number]
   zoom: number
 }
-
+export type FlowExportObjectServer<T = any> = {
+  nodes: FlowElements<T>
+  lines: FlowElements<T>
+}
 export type FlowTransform = {
   x: number
   y: number
