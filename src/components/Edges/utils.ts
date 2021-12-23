@@ -82,6 +82,7 @@ export function getBezierPath({
 
   let path = `M${sourceX},${sourceY} C${sourceX},${cY} ${targetX},${cY} ${targetX},${targetY}`
 
+  console.log(324);
   if (leftAndRight.includes(sourcePosition) && leftAndRight.includes(targetPosition)) {
     const dx = targetX - sourceX;
     if (dx < offsetD) {
@@ -90,7 +91,19 @@ export function getBezierPath({
     } else {
       path = `M${sourceX},${sourceY} C${cX},${sourceY} ${cX},${targetY} ${targetX},${targetY}`
     }
-  } else if (leftAndRight.includes(targetPosition)) {
+  }else if(sourcePosition == Position.Bottom || sourcePosition == Position.Top){
+    const dx = targetX - sourceX;
+    let offsetCX = -(dx - offsetD);
+    const dy = Math.abs(targetY - sourceY);
+    let offsetCY = Math.abs(dy - offsetD)*((sourcePosition == Position.Bottom)?1:-1);
+    if (dx > offsetD) {
+      offsetCX = 0;
+    }
+    if (dy > offsetD) {
+      offsetCY = 0;
+    }
+    path = `M${sourceX},${sourceY} C${sourceX},${cY+offsetCY} ${cX-offsetCX},${targetY} ${targetX},${targetY}`
+  }else if (leftAndRight.includes(targetPosition)) {
     path = `M${sourceX},${sourceY} Q${sourceX},${targetY} ${sourceX},${targetY} ${targetX},${targetY}`
   } else if (leftAndRight.includes(sourcePosition)) {
     path = `M${sourceX},${sourceY} Q${targetX},${sourceY} ${targetX},${sourceY} ${targetX},${targetY}`

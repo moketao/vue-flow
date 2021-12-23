@@ -15,6 +15,7 @@ import {
 import EdgeWrapper from '../../components/Edges/EdgeWrapper.vue'
 import ConnectionLine from '../../components/ConnectionLine/ConnectionLine.vue'
 import MarkerDefinitions from './MarkerDefinitions.vue'
+import { useFlowStore } from "~/store";
 
 interface EdgeRendererProps {
   edges: GraphEdge[]
@@ -53,10 +54,11 @@ const getType = (type?: string) => {
   }
   return edgeType
 }
-
 const sourceNode = controlledComputed(
   () => props.connectionNodeId,
   () => {
+    // state;
+    console.log(999993);
     if (props.connectionNodeId) return props.nodes[props.nodes.map((n) => n.id).indexOf(props.connectionNodeId)]
   },
 )
