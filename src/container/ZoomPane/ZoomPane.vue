@@ -71,7 +71,10 @@ nextTick(async () => {
   store.initD3Zoom({ d3Zoom: d3z, d3Selection: d3s, d3ZoomHandler })
   store.transform = [updatedTransform.x, updatedTransform.y, updatedTransform.k]
 
+  console.log('zoom store',store);
+
   d3z.on('start', (event: D3ZoomEvent<HTMLDivElement, any>) => {
+    console.log('event.transform',event);
     if (viewChanged(transform.value, event.transform)) {
       const flowTransform = eventToFlowTransform(event.transform)
       transform.value = flowTransform
@@ -94,8 +97,8 @@ nextTick(async () => {
       d3z.on('zoom', (event: D3ZoomEvent<HTMLDivElement, any>) => {
         if (viewChanged(transform.value, event.transform)) {
           const flowTransform = eventToFlowTransform(event.transform)
-          flowTransform.x = flowTransform.x||0;
-          flowTransform.y = flowTransform.y||0;
+          flowTransform.x = flowTransform.x||1;
+          flowTransform.y = flowTransform.y||1;
           transform.value = flowTransform
           store.hooks.move.trigger(flowTransform)
         }

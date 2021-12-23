@@ -28,8 +28,10 @@ import { nodeType } from "~/editor/const_var";
 const onElementsSel = ({event: MouseEvent, node: el}) => {
   selElement.value = el;
 }
-const onRestore = (els: Elements) => {
-  console.log('onRestore');
+const onRestore = (els: Elements,maxID:number) => {
+  maxID++;
+  console.log('onRestore maxID:',maxID);
+  id=maxID||1;
   elements.value = JSON.parse(
     JSON.stringify(els),
   )
@@ -140,7 +142,7 @@ let node_type = nodeType;
     <EditorToolbar class="aside" />
     <VueFlow
       v-model="elements"
-      storage-key="example-flow-1231"
+      storage-key="example-flow-1233"
       :node-types="['gateway']"
       :edge-types="[node_type.line, 'custom2']"
       @connect="onConnect"

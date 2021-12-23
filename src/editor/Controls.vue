@@ -26,11 +26,11 @@ const state = useStorage(flowKey, {
   zoom: 1,
 } as FlowExportObject)
 
-// const stateServer = useStorage(flowKeyServer, {
-//   nodes: [],
-//   lines: [],
-//   position: [0, 0],
-// } as FlowExportObjectServer)
+const stateServer = useStorage(flowKeyServer, {
+  nodes: [],
+  lines: [],
+  position: [NaN, NaN],
+} as FlowExportObjectServer)
 
 
 const getNodeId = () => `randomnode_${+new Date()}`
@@ -45,13 +45,14 @@ const onSave = () => {
   if (flow.instance) {
     let inst = flow.instance;
     let ob = inst.toObject();
-    state.value = ob;
-    // stateServer.value = toServerFormat(ob);
-    // console.log(stateServer);
+    // state.value = ob;
+    stateServer.value = toServerFormat(ob);
+    console.log(stateServer);
   }
 }
 function toServerFormat(_ob) {
-  let ob = JSON.parse( JSON.stringify(toRaw(unref(_ob))) );
+  // let ob = JSON.parse( JSON.stringify(toRaw(unref(_ob))) );
+  let ob = JSON.parse( JSON.stringify(_ob) );
   delete ob.position;
   delete ob.zoom;
   let output = {nodes:[],lines:[]};
@@ -70,15 +71,18 @@ function toServerFormat(_ob) {
   return output;
 }
 function fromServerFormat() {
-  let ob = JSON.parse( JSON.stringify(toRaw(unref(stateServer.value))) );
-  let output:FlowExportObject = {elements:[],position:[0,0]};
+  // let ob = JSON.parse( JSON.stringify(toRaw(unref(stateServer.value))) );
+  let ob = JSON.parse( JSON.stringify(stateServer.value) );
+  let output:FlowExportObject = {elements:[],position:[0,0],zoom:1,maxID:0};
   console.log(ob);
   let dic = new Map<string,any>()
   ob.nodes.forEach((o)=>{
+    if(parseInt(o.id)>=output.maxID)output.maxID=parseInt(o.id);
     dic.set(o.id,o)
     output.elements.push(o);
   })
   ob.lines.forEach((o)=>{
+    if(parseInt(o.id)>=output.maxID)output.maxID=parseInt(o.id);
     o.sourceNode = dic.get(o.source)
     o.targetNode = dic.get(o.target)
     output.elements.push(o);
@@ -87,13 +91,13 @@ function fromServerFormat() {
   return output;
 }
 const onRestore = () => {
-  const flow: FlowExportObject | null = state.value
-  // const flow: FlowExportObject | null = fromServerFormat();
+  // const flow: FlowExportObject | null = state.value
+  const flow: FlowExportObject | null = fromServerFormat();
   console.log('onRestore',flow);
   if (flow) {
     flow.position = [0,0];
     const [x = 0, y = 0] = flow.position
-    emit('restore', flow.elements ?? [])
+    emit('restore', flow.elements ?? [],flow.maxID)
     transform({ x, y, zoom: flow.zoom || 0 })
   }
 }

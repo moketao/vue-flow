@@ -76,6 +76,7 @@ export type FlowExportObject<T = any> = {
   elements: FlowElements<T>
   position: [number, number]
   zoom: number
+  maxID: number
 }
 export type FlowExportObjectServer<T = any> = {
   nodes: FlowElements<T>
