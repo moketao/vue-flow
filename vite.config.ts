@@ -46,8 +46,9 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    vueJsx(),
-    svgLoader(), // https://github.com/antfu/unplugin-auto-import
+    vueTypes(),
+    svgLoader(),
+    // https://github.com/antfu/unplugin-auto-import
     AutoImport({
       imports: ['vue', '@vueuse/core'],
       dts: 'src/auto-imports.d.ts',
@@ -58,10 +59,10 @@ export default defineConfig({
     }),
     copy({
       targets: [
-        // {
-        //   src: 'src/theme-default.css',
-        //   dest: 'dist',
-        // },
+        {
+          src: 'src/theme-default.css',
+          dest: 'dist',
+        },
       ],
     }),
   ],

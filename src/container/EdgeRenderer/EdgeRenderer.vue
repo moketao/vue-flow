@@ -1,78 +1,41 @@
 <script lang="ts" setup>
-import { CSSProperties } from 'vue'
-import {
-  ConnectionLineType,
-  ConnectionMode,
-  Dimensions,
-  EdgeComponent,
-  ElementId,
-  GraphEdge,
-  GraphNode,
-  HandleType,
-  Transform,
-  XYPosition,
-} from '../../types'
 import EdgeWrapper from '../../components/Edges/EdgeWrapper.vue'
 import ConnectionLine from '../../components/ConnectionLine/ConnectionLine.vue'
+import { useVueFlow } from '../../composables'
+import { groupEdgesByZLevel } from '../../utils'
 import MarkerDefinitions from './MarkerDefinitions.vue'
-import { useFlowStore } from "~/store";
 
-interface EdgeRendererProps {
-  edges: GraphEdge[]
-  nodes: GraphNode[]
-  edgeTypes: Record<string, EdgeComponent>
-  transform: Transform
-  dimensions: Dimensions
-  connectionLineType?: ConnectionLineType
-  connectionLineStyle?: CSSProperties
-  arrowHeadColor?: string
-  markerEndId?: string
-  elementsSelectable?: boolean
-  edgeUpdaterRadius?: number
-  connectionNodeId?: ElementId
-  connectionHandleType?: HandleType
-  connectionHandleId?: ElementId
-  connectionPosition?: XYPosition
-  connectionMode: ConnectionMode
-  nodesConnectable?: boolean
-  edgesUpdatable?: boolean
-}
-
-const props = withDefaults(defineProps<EdgeRendererProps>(), {
-  arrowHeadColor: '#b1b1b7',
-  connectionLineType: ConnectionLineType.Bezier,
-  edgeUpdaterRadius: 10,
-  handleEdgeUpdate: false,
-})
-
+const { store } = useVueFlow()
 const getType = (type?: string) => {
   const t = type ?? 'default'
-  let edgeType = props.edgeTypes[t]
+  let edgeType = store.getEdgeTypes[t]
   if (!edgeType) {
-    edgeType = props.edgeTypes.default
+    edgeType = store.getEdgeTypes.default
     console.warn(`Edge type "${type}" not found. Using fallback type "default".`)
   }
   return edgeType
 }
+
 const sourceNode = controlledComputed(
-  () => props.connectionNodeId,
+  () => store.connectionNodeId,
   () => {
-    // state;
-    console.log(999993);
-    if (props.connectionNodeId) return props.nodes[props.nodes.map((n) => n.id).indexOf(props.connectionNodeId)]
+    if (store.connectionNodeId) return store.getNodes[store.getNodes.map((n) => n.id).indexOf(store.connectionNodeId)]
   },
 )
 const connectionLineVisible = controlledComputed(
-  () => props.connectionNodeId,
+  () => store.connectionNodeId,
   () =>
     !!(
       sourceNode.value &&
-      (typeof sourceNode.value.connectable === 'undefined' ? props.nodesConnectable : sourceNode.value.connectable) &&
-      props.connectionNodeId &&
-      props.connectionHandleType
+      (typeof sourceNode.value.connectable === 'undefined' ? store.nodesConnectable : sourceNode.value.connectable) &&
+      store.connectionNodeId &&
+      store.connectionHandleType
     ),
 )
-const transform = computed(() => `translate(${props.transform[0]},${props.transform[1]}) scale(${props.transform[2]})`)
+const groups = controlledComputed(
+  () => store.getEdges,
+  () => groupEdgesByZLevel(store.getEdges, store.getNodes),
+)
 </script>
 <script lang="ts">
 export default {
@@ -80,39 +43,31 @@ export default {
 }
 </script>
 <template>
-  <svg :width="props.dimensions.width" :height="props.dimensions.height" class="vue-flow__edges">
-    <MarkerDefinitions :color="props.arrowHeadColor" />
-    <g :transform="transform">
+  <svg
+    v-for="group of groups"
+    :key="group.level"
+    :width="store.dimensions.width"
+    :height="store.dimensions.height"
+    class="vue-flow__edges vue-flow__container"
+    :style="`z-index: ${group.level}`"
+  >
+    <MarkerDefinitions v-if="group.isMaxLevel" :default-color="store.defaultMarkerColor" />
+    <g>
       <EdgeWrapper
-        v-for="(edge, i) of props.edges"
-        :key="`${edge.id}-${i}`"
+        v-for="edge of group.edges"
+        :key="edge.id"
         :edge="edge"
         :component="getType(edge.type)"
-        :selectable="props.elementsSelectable"
-        :updatable="typeof edge.updatable === 'undefined' ? props.edgesUpdatable : edge.updatable"
-        :edge-updater-radius="props.edgeUpdaterRadius"
-        :dimensions="props.dimensions"
-        :transform="props.transform"
+        :selectable="typeof edge.selectable === 'undefined' ? store.elementsSelectable : edge.selectable"
+        :updatable="typeof edge.updatable === 'undefined' ? store.edgesUpdatable : edge.updatable"
       >
         <template #default="edgeProps">
           <slot :name="`edge-${edge.type}`" v-bind="edgeProps"></slot>
         </template>
       </EdgeWrapper>
-      <ConnectionLine
-        v-if="connectionLineVisible && sourceNode"
-        :source-node="sourceNode"
-        :connection-line-style="props.connectionLineStyle"
-        :connection-line-type="props.connectionLineType"
-        :connection-handle-id="props.connectionHandleId"
-        :connection-node-id="props.connectionNodeId"
-        :connection-handle-type="props.connectionHandleType"
-        :connection-position="props.connectionPosition"
-        :connection-mode="props.connectionMode"
-        :nodes="props.nodes"
-        :transform="props.transform"
-      >
+      <ConnectionLine v-if="connectionLineVisible && sourceNode" :source-node="sourceNode">
         <template #default="customConnectionLineProps">
-          <slot name="custom-connection-line" v-bind="customConnectionLineProps"></slot>
+          <slot name="connection-line" v-bind="customConnectionLineProps"></slot>
         </template>
       </ConnectionLine>
     </g>

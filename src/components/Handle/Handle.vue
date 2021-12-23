@@ -1,20 +1,14 @@
 <script lang="ts" setup>
-import { useHandle } from '../../composables'
-import { Position, ValidConnectionFunc } from '../../types'
+import { useHandle, useVueFlow } from '../../composables'
+import { Position } from '../../types'
 import { NodeId } from '../../context'
+import type { HandleProps } from '../../types/components'
 
-interface HandleProps {
-  id?: string
-  type?: string
-  position?: Position
-  isValidConnection?: ValidConnectionFunc
-  connectable?: boolean
-}
-
+const { id, hooks } = useVueFlow()
 const props = withDefaults(defineProps<HandleProps>(), {
   id: '',
   type: 'source',
-  position: Position.Top,
+  position: 'top' as Position,
   connectable: true,
 })
 
@@ -22,7 +16,9 @@ const nodeId = inject(NodeId, '')
 
 const handler = useHandle()
 const onMouseDownHandler = (event: MouseEvent) =>
-  handler(event, props.id, nodeId, props.type === 'target', props.isValidConnection)
+  handler(event, props.id, nodeId, props.type === 'target', props.isValidConnection, undefined, (connection) =>
+    hooks.value.connect.trigger(connection),
+  )
 </script>
 <script lang="ts">
 export default {
@@ -37,6 +33,7 @@ export default {
     :class="[
       'vue-flow__handle',
       `vue-flow__handle-${props.position}`,
+      `vue-flow__handle-${id}`,
       'nodrag',
       {
         source: props.type !== 'target',

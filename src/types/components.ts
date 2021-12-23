@@ -1,21 +1,27 @@
 import { Component, CSSProperties, DefineComponent } from 'vue'
-import { BackgroundVariant, Dimensions, ElementId, Elements, FitViewParams, FlowOptions, Position, XYPosition } from './flow'
-import { Connection, ConnectionLineType, ConnectionMode } from './connection'
-import { GraphNode, Node, NodeExtent, NodeProps, TranslateExtent } from './node'
+import { BackgroundVariant, Dimensions, Position, XYPosition } from './flow'
+import { Connection, ConnectionLineType } from './connection'
+import { GraphNode, Node, NodeProps } from './node'
 import { EdgeProps } from './edge'
-import { KeyCode, PanOnScrollMode } from './zoom'
+import { FitViewParams } from './zoom'
 
-export type DefaultEdgeTypes = { [key in 'default' | 'straight' | 'smoothstep' | 'step']: Component<EdgeProps> }
-export type EdgeTypes = (keyof DefaultEdgeTypes | string)[]
-export type NodeComponent = Component<NodeProps> | DefineComponent<NodeProps, any, any, any, any> | string
-export type DefaultNodeTypes = { [key in 'input' | 'output' | 'default']: Component<NodeProps> }
-export type NodeTypes = (keyof DefaultNodeTypes | string)[]
-export type EdgeComponent = Component<EdgeProps> | DefineComponent<EdgeProps, any, any, any, any, any> | string
+type GlobalComponentName = string
+export type NodeComponent<N = any> =
+  | Component<NodeProps<N>>
+  | DefineComponent<NodeProps<N>, any, any, any, any>
+  | GlobalComponentName
+export type EdgeComponent<E = any> =
+  | Component<EdgeProps<E>>
+  | DefineComponent<EdgeProps<E>, any, any, any, any, any>
+  | GlobalComponentName
+
+export type DefaultEdgeTypes = { [key in 'default' | 'straight' | 'smoothstep' | 'step']: EdgeComponent }
+export type DefaultNodeTypes = { [key in 'input' | 'output' | 'default']: NodeComponent }
 
 export type HandleType = 'source' | 'target'
 
 export interface HandleElement extends XYPosition, Dimensions {
-  id?: ElementId
+  id?: string
   position: Position
 }
 
@@ -50,23 +56,21 @@ export interface ControlEvents {
   (event: 'interaction-change', active: boolean): void
 }
 
-export type StringFunc = (node: Node | GraphNode) => string
+export type StringFunc<N = any> = (node: Node<N> | GraphNode<N>) => string
 export type ShapeRendering = 'inherit' | 'auto' | 'geometricPrecision' | 'optimizeSpeed' | 'crispEdges' | undefined
 
-export interface MiniMapProps {
-  nodeColor?: string | StringFunc
-  nodeStrokeColor?: string | StringFunc
-  nodeClassName?: string | StringFunc
+export interface MiniMapProps<N = any> {
+  nodeColor?: string | (<NC = N>(node: Node<NC> | GraphNode<NC>) => string)
+  nodeStrokeColor?: string | (<NSC = N>(node: Node<NSC> | GraphNode<NSC>) => string)
+  nodeClassName?: string | (<NCM = N>(node: Node<NCM> | GraphNode<NCM>) => string)
   nodeBorderRadius?: number
   nodeStrokeWidth?: number
   maskColor?: string
 }
 
 export interface MiniMapNodeProps {
-  x?: number
-  y?: number
-  width?: number
-  height?: number
+  position: XYPosition
+  dimensions: Dimensions
   borderRadius?: number
   color?: string
   shapeRendering?: CSSProperties['shapeRendering']
@@ -85,12 +89,12 @@ export interface EdgeTextProps {
       }
   labelStyle?: CSSProperties
   labelShowBg?: boolean
-  labelBgStyle?: any
+  labelBgStyle?: CSSProperties
   labelBgPadding?: [number, number]
   labelBgBorderRadius?: number
 }
 
-export interface CustomConnectionLineProps {
+export interface ConnectionLineProps<N = any> {
   sourceX: number
   sourceY: number
   sourcePosition: Position
@@ -99,47 +103,7 @@ export interface CustomConnectionLineProps {
   targetPosition: Position
   connectionLineType: ConnectionLineType
   connectionLineStyle: CSSProperties
-  nodes: GraphNode[]
-  sourceNode: GraphNode
+  nodes: GraphNode<N>[]
+  sourceNode: GraphNode<N>
   sourceHandle: HandleElement
-}
-
-export interface FlowProps extends FlowOptions {
-  id?: string
-  modelValue?: Elements
-  nodeTypes?: NodeTypes
-  edgeTypes?: EdgeTypes
-  connectionMode?: ConnectionMode
-  connectionLineType?: ConnectionLineType
-  connectionLineStyle?: CSSProperties
-  deleteKeyCode?: KeyCode
-  selectionKeyCode?: KeyCode
-  multiSelectionKeyCode?: KeyCode
-  zoomActivationKeyCode?: KeyCode
-  preventScrolling?: boolean
-  snapToGrid?: boolean
-  snapGrid?: [number, number]
-  onlyRenderVisibleElements?: boolean
-  nodesDraggable?: boolean
-  nodesConnectable?: boolean
-  elementsSelectable?: boolean
-  selectNodesOnDrag?: boolean
-  paneMoveable?: boolean
-  minZoom?: number
-  maxZoom?: number
-  defaultZoom?: number
-  defaultPosition?: [number, number]
-  translateExtent?: TranslateExtent
-  nodeExtent?: NodeExtent
-  arrowHeadColor?: string
-  markerEndId?: string
-  zoomOnScroll?: boolean
-  zoomOnPinch?: boolean
-  panOnScroll?: boolean
-  panOnScrollSpeed?: number
-  panOnScrollMode?: PanOnScrollMode
-  zoomOnDoubleClick?: boolean
-  edgeUpdaterRadius?: number
-  storageKey?: string
-  loading?: string
 }

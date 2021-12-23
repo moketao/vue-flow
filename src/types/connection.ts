@@ -1,4 +1,3 @@
-import { ArrowHeadType, ElementId, Position } from "./flow";
 import { HandleType } from './components'
 
 export enum ConnectionLineType {
@@ -9,29 +8,15 @@ export enum ConnectionLineType {
 }
 
 export interface Connection {
-  source: ElementId
-  target: ElementId
-  sourceHandle?: ElementId
-  targetHandle?: ElementId
-  data:Object
-  arrowHeadType:ArrowHeadType
+  source: string
+  target: string
+  sourceHandle?: string
+  targetHandle?: string
 }
 
-export type ConnectionLineProps = {
-  sourceX: number
-  sourceY: number
-  sourcePosition?: Position
-  targetX: number
-  targetY: number
-  targetPosition?: Position
-  connectionLineStyle?: any
-  connectionLineType: ConnectionLineType
-}
-
-export type OnConnectFunc = (connection: Connection) => void
 export type OnConnectStartParams = {
-  nodeId?: ElementId
-  handleId?: ElementId
+  nodeId?: string
+  handleId?: string
   handleType?: HandleType
 }
 
@@ -41,7 +26,7 @@ export enum ConnectionMode {
 }
 
 export type SetConnectionId = {
-  connectionNodeId: ElementId | undefined
-  connectionHandleId: ElementId | undefined
+  connectionNodeId: string | undefined
+  connectionHandleId: string | undefined
   connectionHandleType: HandleType | undefined
 }

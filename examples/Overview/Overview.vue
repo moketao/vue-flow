@@ -1,8 +1,6 @@
 <script lang="ts" setup>
-import { CSSProperties } from 'vue'
 import {
   VueFlow,
-  removeElements,
   addEdge,
   MiniMap,
   Controls,
@@ -10,14 +8,13 @@ import {
   isNode,
   Node,
   Elements,
-  FlowElement,
   FlowInstance,
   FlowTransform,
   SnapGrid,
-  ArrowHeadType,
   Connection,
   Edge,
   FlowEvents,
+  MarkerType,
 } from '~/index'
 
 const onNodeDragStart = (e: FlowEvents['nodeDragStart']) => console.log('drag start', e)
@@ -50,56 +47,44 @@ const initialElements: Elements = [
   {
     id: '1',
     type: 'input',
-    data: {
-      label: 'Welcome to <strong>Vue VueFlow!</strong>',
-    },
+    label: 'Welcome to <strong>Vue VueFlow!</strong>',
     position: { x: 250, y: 0 },
   },
   {
     id: '2',
-    data: {
-      label: 'This is a <strong>default node</strong>',
-    },
+    label: 'This is a <strong>default node</strong>',
     position: { x: 100, y: 100 },
   },
   {
     id: '3',
-    data: {
-      label: 'This one has a <strong>custom style</strong>',
-    },
+    label: 'This one has a <strong>custom style</strong>',
     position: { x: 400, y: 100 },
     style: { background: '#D6D5E6', color: '#333', border: '1px solid #222138', width: 180 },
   },
   {
     id: '4',
     position: { x: 250, y: 200 },
-    data: {
-      label: `You can find the docs on
+    label: `You can find the docs on
           <a href="https://github.com/bcakmakoglu/vue-flow" target="_blank" rel="noopener noreferrer">
             Github
           </a>`,
-    },
   },
   {
     id: '5',
-    data: {
-      label: 'Or check out the other <strong>examples</strong>',
-    },
+    label: 'Or check out the other <strong>examples</strong>',
     position: { x: 250, y: 325 },
   },
   {
     id: '6',
     type: 'output',
-    data: {
-      label: 'An <strong>output node</strong>',
-    },
+    label: 'An <strong>output node</strong>',
     position: { x: 100, y: 480 },
   },
-  { id: '7', type: 'output', data: { label: 'Another output node' }, position: { x: 400, y: 450 } },
+  { id: '7', type: 'output', label: 'Another output node', position: { x: 400, y: 450 } },
   { id: 'e1-2', source: '1', target: '2', label: 'this is an edge label' },
   { id: 'e1-3', source: '1', target: '3' },
   { id: 'e3-4', source: '3', target: '4', animated: true, label: 'animated edge' },
-  { id: 'e4-5', source: '4', target: '5', arrowHeadType: ArrowHeadType.Arrow, label: 'edge with arrow head' },
+  { id: 'e4-5', source: '4', target: '5', markerEnd: MarkerType.Arrow, label: 'edge with arrow head' },
   { id: 'e5-6', source: '5', target: '6', type: 'smoothstep', label: 'smooth step edge' },
   {
     id: 'e5-7',
@@ -113,7 +98,6 @@ const initialElements: Elements = [
   },
 ]
 
-const connectionLineStyle: CSSProperties = { stroke: '#ddd' }
 const snapGrid: SnapGrid = [16, 16]
 
 const nodeStrokeColor = (n: Node): string => {
@@ -133,17 +117,16 @@ const nodeColor = (n: Node): string => {
 
 const elements = ref<Elements>(initialElements)
 const onConnect = (params: Connection | Edge) => (elements.value = addEdge(params, elements.value))
-const onElementsRemove = (elementsToRemove: Elements) => (elements.value = removeElements(elementsToRemove, elements.value))
 </script>
 <template>
   <VueFlow
     v-model="elements"
-    :connection-line-style="connectionLineStyle"
+    :connection-line-style="{ stroke: '#ddd' }"
     :snap-to-grid="true"
     :snap-grid="snapGrid"
     @element-click="onElementClick"
-    @elements-remove="onElementsRemove"
     @connect="onConnect"
+    @pane-ready="onLoad"
     @pane-click="onPaneClick"
     @pane-scroll="onPaneScroll"
     @pane-contex-menu="onPaneContextMenu"
@@ -157,7 +140,6 @@ const onElementsRemove = (elementsToRemove: Elements) => (elements.value = remov
     @selection-context-menu="onSelectionContextMenu"
     @selection-change="onSelectionChange"
     @move-end="onMoveEnd"
-    @load="onLoad"
     @edge-update="onEdgeMouseMove"
     @edge-context-menu="onEdgeContextMenu"
     @edge-mouse-enter="onEdgeMouseEnter"

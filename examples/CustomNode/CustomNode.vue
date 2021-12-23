@@ -1,21 +1,18 @@
 <script lang="ts" setup>
 import ColorSelectorNode from './ColorSelectorNode.vue'
 import {
-  VueFlow,
-  isEdge,
-  removeElements,
-  addEdge,
-  MiniMap,
-  Controls,
-  Node,
-  FlowElement,
-  FlowInstance,
+  ConnectionMode,
   Elements,
+  FlowElement,
+  isEdge,
+  Node,
   Position,
   SnapGrid,
-  Connection,
-  ConnectionMode,
-  Edge,
+  useNodesState,
+  useVueFlow,
+  VueFlow,
+  Controls,
+  MiniMap,
 } from '~/index'
 
 const elements = ref<Elements>([])
@@ -23,12 +20,6 @@ const bgColor = ref('#1A192B')
 const connectionLineStyle = { stroke: '#fff' }
 const snapGrid: SnapGrid = [16, 16]
 
-const onLoad = (flowInstance: FlowInstance) => {
-  flowInstance.fitView()
-  console.log('flow loaded:', flowInstance)
-}
-const onNodeDragStop = ({ node }) => console.log('drag stop', node)
-const onElementClick = ({ element }) => console.log('click', element)
 const nodeStroke = (n: Node): string => {
   if (n.type === 'input') return '#0041d0'
   if (n.type === 'selectorNode') return bgColor.value
@@ -40,51 +31,40 @@ const nodeColor = (n: Node): string => {
   return '#fff'
 }
 
+const onChange = (event: Event) => {
+  elements.value.forEach((e: FlowElement) => {
+    if (isEdge(e) || e.id !== '2') return e
+    bgColor.value = (event.target as HTMLInputElement).value
+  })
+}
+
 onMounted(() => {
-  const onChange = (event: Event) => {
-    elements.value = elements.value.map((e: FlowElement) => {
-      if (isEdge(e) || e.id !== '2') {
-        return e
-      }
-      const color = (event.target as HTMLInputElement).value
-      bgColor.value = color
-
-      return {
-        ...e,
-        data: {
-          ...e.data,
-          color,
-        },
-      }
-    })
-  }
-
   elements.value = [
     {
       id: '1',
       type: 'input',
-      data: { label: 'An input node' },
+      label: 'An input node',
       position: { x: 0, y: 50 },
       sourcePosition: Position.Right,
     },
     {
       id: '2',
       type: 'selectorNode',
-      data: { onChange, color: bgColor.value },
+      data: { onChange, color: bgColor },
       style: { border: '1px solid #777', padding: '10px' },
       position: { x: 250, y: 50 },
     },
     {
       id: '3',
       type: 'output',
-      data: { label: 'Output A' },
+      label: 'Output A',
       position: { x: 650, y: 25 },
       targetPosition: Position.Left,
     },
     {
       id: '4',
       type: 'output',
-      data: { label: 'Output B' },
+      label: 'Output B',
       position: { x: 650, y: 100 },
       targetPosition: Position.Left,
     },
@@ -95,33 +75,22 @@ onMounted(() => {
   ]
 })
 
-const onElementsRemove = (elementsToRemove: Elements) => (elements.value = removeElements(elementsToRemove, elements.value))
-
-const onConnect = (params: Connection | Edge) =>
-  (elements.value = addEdge(
-    {
-      ...params,
-      animated: true,
-      style: { stroke: '#fff' },
-    } as Edge,
-    elements.value,
-  ))
+const { onPaneReady } = useVueFlow()
+useNodesState()
+onPaneReady((flowInstance) => {
+  flowInstance.fitView()
+  console.log('flow loaded:', flowInstance)
+})
 </script>
 <template>
   <VueFlow
     v-model="elements"
-    :style="`background: ${bgColor}`"
-    :node-types="['selectorNode']"
+    :style="{ backgroundColor: bgColor }"
     :connection-mode="ConnectionMode.Loose"
     :connection-line-style="connectionLineStyle"
     :snap-to-grid="true"
     :snap-grid="snapGrid"
     :default-zoom="1.5"
-    @element-click="onElementClick"
-    @elements-remove="onElementsRemove"
-    @connect="onConnect"
-    @node-drag-stop="onNodeDragStop"
-    @load="onLoad"
   >
     <template #node-selectorNode="props">
       <ColorSelectorNode v-bind="props" />

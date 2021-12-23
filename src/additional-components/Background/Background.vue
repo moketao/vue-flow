@@ -1,16 +1,10 @@
 <script lang="ts" setup>
 import { BackgroundVariant } from '../../types'
-import { useStore } from '../../composables'
-
-interface BackgroundProps {
-  variant?: BackgroundVariant
-  gap?: number
-  color?: string
-  size?: number
-}
+import { useVueFlow } from '../../composables'
+import type { BackgroundProps } from '../../types/components'
 
 const props = withDefaults(defineProps<BackgroundProps>(), {
-  variant: BackgroundVariant.Dots,
+  variant: 'dots' as BackgroundVariant,
   gap: 10,
   size: 0.4,
 })
@@ -20,7 +14,7 @@ const defaultColors: Record<BackgroundVariant, string> = {
   [BackgroundVariant.Lines]: '#eee',
 }
 
-const store = useStore()
+const { store } = useVueFlow()
 
 const background = computed(() => {
   const scaledGap = props.gap && props.gap * store.transform[2]
@@ -52,7 +46,7 @@ export default {
 }
 </script>
 <template>
-  <svg class="vue-flow__background" style="width: 100%; height: 100%">
+  <svg class="vue-flow__background vue-flow__container">
     <pattern
       :id="patternId"
       :x="background.xOffset"

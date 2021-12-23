@@ -1,6 +1,6 @@
-import useStore from './useStore'
+import useVueFlow from './useVueFlow'
 import { getHostForElement } from '~/utils'
-import { Connection, ConnectionMode, ElementId, HandleType, FlowStore, ValidConnectionFunc } from '~/types'
+import { Connection, ConnectionMode, HandleType, FlowStore, ValidConnectionFunc } from '~/types'
 
 type Result = {
   elementBelow: Element | null
@@ -14,8 +14,8 @@ export const checkElementBelowIsValid = (
   event: MouseEvent,
   connectionMode: ConnectionMode,
   isTarget: boolean,
-  nodeId: ElementId,
-  handleId: ElementId,
+  nodeId: string,
+  handleId: string,
   isValidConnection: ValidConnectionFunc,
   doc: Document,
 ) => {
@@ -67,11 +67,11 @@ const resetRecentHandle = (hoveredHandle: Element): void => {
   hoveredHandle?.classList.remove('vue-flow__handle-connecting')
 }
 
-export default (store: FlowStore = useStore()) =>
+export default (store: FlowStore = useVueFlow().store) =>
   (
     event: MouseEvent,
-    handleId: ElementId,
-    nodeId: ElementId,
+    handleId: string,
+    nodeId: string,
     isTarget: boolean,
     isValidConnection?: ValidConnectionFunc,
     elementEdgeUpdaterType?: HandleType,
@@ -79,13 +79,14 @@ export default (store: FlowStore = useStore()) =>
     onEdgeUpdateEnd?: () => void,
   ) => {
     const flowNode = (event.target as Element).closest('.vue-flow')
-    // when vue-flow is used inside a shadow root we can't use document
     const doc = getHostForElement(event.target as HTMLElement)
-
     if (!doc) return
+
     let validConnectFunc: ValidConnectionFunc = isValidConnection ?? (() => true)
+    const node = store.getNode(nodeId)
+
+    if (node && (typeof node.connectable === 'undefined' ? store.nodesConnectable : node.connectable) === false) return
     if (!isValidConnection) {
-      const node = store.getNodes.find((n) => n.id === nodeId)
       if (node) validConnectFunc = (!isTarget ? node.isValidTargetPos : node.isValidSourcePos) ?? (() => true)
     }
     const elementBelow = doc.elementFromPoint(event.clientX, event.clientY)
@@ -123,9 +124,7 @@ export default (store: FlowStore = useStore()) =>
         doc,
       )
 
-      if (!isHoveringHandle) {
-        return resetRecentHandle(recentHoveredHandle)
-      }
+      if (!isHoveringHandle) return resetRecentHandle(recentHoveredHandle)
 
       const isOwnHandle = connection.source === connection.target
 
@@ -148,9 +147,9 @@ export default (store: FlowStore = useStore()) =>
       )
 
       store.hooks.connectStop.trigger(event)
+      const isOwnHandle = connection.source === connection.target
 
-      if (isValid) {
-        store.hooks.connect.trigger(connection)
+      if (isValid && !isOwnHandle) {
         onEdgeUpdate?.(connection)
       }
 

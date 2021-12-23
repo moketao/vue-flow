@@ -1,18 +1,12 @@
 <script lang="ts" setup>
 import Handle from '../Handle/Handle.vue'
-import { NodeProps, Position, ValidConnectionFunc } from '../../types'
+import { Position } from '../../types'
+import type { NodeProps } from '../../types/node'
 
-interface InputNodeProps extends NodeProps {
-  data?: NodeProps['data']
-  connectable?: NodeProps['connectable']
-  sourcePosition?: NodeProps['sourcePosition']
-  isValidSourcePos?: ValidConnectionFunc
-}
-
-const props = withDefaults(defineProps<InputNodeProps>(), {
+const props = withDefaults(defineProps<NodeProps>(), {
   data: () => {},
   connectable: false,
-  sourcePosition: Position.Bottom,
+  sourcePosition: 'bottom' as Position,
 })
 </script>
 <script lang="ts">
@@ -24,7 +18,7 @@ export default {
 <template>
   <slot v-bind="props">
     <component :is="props.data?.label" v-if="typeof props.data?.label !== 'string'" />
-    <span class="span" v-else v-html="props.data?.label"></span>
+    <span v-else v-html="props.data?.label"></span>
   </slot>
   <Handle
     type="source"

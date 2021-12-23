@@ -1,9 +1,9 @@
-import { EmitFunc, FlowHooks, FlowEvents, FlowStore } from '~/types'
+import { EmitFunc, FlowHooks, FlowEvents } from '~/types'
 
 // flow event hooks
 export const createHooks = (): FlowHooks => ({
-  elementClick: createEventHook(),
-  elementsRemove: createEventHook(),
+  edgesChange: createEventHook(),
+  nodesChange: createEventHook(),
   nodeDoubleClick: createEventHook(),
   nodeClick: createEventHook(),
   nodeMouseEnter: createEventHook(),
@@ -17,12 +17,10 @@ export const createHooks = (): FlowHooks => ({
   connectStart: createEventHook(),
   connectStop: createEventHook(),
   connectEnd: createEventHook(),
-  elementsProcessed: createEventHook(),
-  load: createEventHook(),
+  paneReady: createEventHook(),
   move: createEventHook(),
   moveStart: createEventHook(),
   moveEnd: createEventHook(),
-  selectionChange: createEventHook(),
   selectionDragStart: createEventHook(),
   selectionDrag: createEventHook(),
   selectionDragStop: createEventHook(),
@@ -49,4 +47,4 @@ const bind = (emit: EmitFunc, hooks: FlowHooks) => {
   }
 }
 
-export default (store: FlowStore, emit: EmitFunc) => bind(emit, store.hooks)
+export default (hooks: FlowHooks, emit: EmitFunc) => bind(emit, hooks)

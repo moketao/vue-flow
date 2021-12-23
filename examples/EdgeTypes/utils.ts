@@ -1,4 +1,4 @@
-import { ElementId, Elements, Position } from '../../src'
+import { Elements, Position } from '../../src'
 
 const nodeWidth = 80
 const nodeGapWidth = nodeWidth * 2
@@ -49,7 +49,7 @@ const offsets = [
 ]
 
 let id = 0
-const getNodeId = (): ElementId => (id++).toString()
+const getNodeId = () => (id++).toString()
 
 export function getElements(): Elements {
   const initialElements = []
@@ -69,18 +69,18 @@ export function getElements(): Elements {
           y: edgeTypeIndex * 300 + sourceTargetIndex * edgeTypes.length * 300,
         }
         const sourceId = getNodeId()
-        const sourceData = { label: `Source ${sourceId}` }
+        const sourceLabel = `Source ${sourceId}`
         const sourceNode = {
           id: sourceId,
           style,
-          data: sourceData,
+          label: sourceLabel,
           position: sourcePosition,
           sourcePosition: currSourceTargetPos.source,
           targetPosition: currSourceTargetPos.target,
         }
 
         const targetId = getNodeId()
-        const targetData = { label: `Target ${targetId}` }
+        const targetLabel = `Target ${targetId}`
         const targetPosition = {
           x: sourcePosition.x + currOffset.x,
           y: sourcePosition.y + currOffset.y,
@@ -88,7 +88,7 @@ export function getElements(): Elements {
         const targetNode = {
           id: targetId,
           style,
-          data: targetData,
+          label: targetLabel,
           position: targetPosition,
           sourcePosition: currSourceTargetPos.source,
           targetPosition: currSourceTargetPos.target,

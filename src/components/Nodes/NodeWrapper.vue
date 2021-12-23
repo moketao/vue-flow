@@ -1,137 +1,116 @@
 <script lang="ts" setup>
 import { DraggableEventListener, DraggableCore } from '@braks/revue-draggable'
-import { useStore } from '../../composables'
-import { GraphNode, SnapGrid, Draggable, NodeDimensionUpdate } from '../../types'
+import { useVueFlow } from '../../composables'
+import { GraphNode, NodeComponent, SnapGrid } from '../../types'
 import { NodeId } from '../../context'
-import { clampPosition, getDimensions, getHandleBounds } from '../../utils'
+import { getDimensions, getHandleBounds, getXYZPos } from '../../utils'
 
 interface NodeWrapperProps {
   node: GraphNode
-  selectNodesOnDrag?: boolean
   snapGrid?: SnapGrid
-  component?: any
-  draggable?: Draggable
+  component?: NodeComponent
+  draggable?: boolean
   selectable?: boolean
   connectable?: boolean
-  scale?: number
 }
 
 const props = defineProps<NodeWrapperProps>()
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:node'])
 const node = useVModel(props, 'node', emit)
-const store = useStore()
+const { id, store } = useVueFlow()
 provide(NodeId, props.node.id)
 
 const nodeElement = templateRef<HTMLDivElement>('node-element', null)
 
-const selected = computed(() => props.selectable && store.selectedElements?.some(({ id }) => id === props.node.id))
+const scale = controlledComputed(
+  () => store.transform[2],
+  () => store.transform[2],
+)
+watch(
+  [() => node.value.position, () => node.value.parentNode],
+  ([pos, parent]) => {
+    const xyzPos = {
+      ...pos,
+      z: node.value.computedPosition.z,
+    }
+    if (parent) {
+      node.value.computedPosition = getXYZPos(parent, xyzPos)
+    } else {
+      node.value.computedPosition = xyzPos
+    }
+  },
+  { deep: true },
+)
 
 const onMouseEnterHandler = () =>
-  props.node.__vf.isDragging && ((event: MouseEvent) => store.hooks.nodeMouseEnter.trigger({ event, node: props.node }))
+  node.value.dragging && ((event: MouseEvent) => store.hooks.nodeMouseEnter.trigger({ event, node: node.value }))
 const onMouseMoveHandler = () =>
-  props.node.__vf.isDragging && ((event: MouseEvent) => store.hooks.nodeMouseMove.trigger({ event, node: props.node }))
+  node.value.dragging && ((event: MouseEvent) => store.hooks.nodeMouseMove.trigger({ event, node: node.value }))
 const onMouseLeaveHandler = () =>
-  props.node.__vf.isDragging && ((event: MouseEvent) => store.hooks.nodeMouseLeave.trigger({ event, node: props.node }))
-const onContextMenuHandler = () => (event: MouseEvent) => store.hooks.nodeContextMenu.trigger({ event, node: props.node })
-const onDoubleClick = () => (event: MouseEvent) => store.hooks.nodeDoubleClick.trigger({ event, node: props.node })
+  node.value.dragging && ((event: MouseEvent) => store.hooks.nodeMouseLeave.trigger({ event, node: node.value }))
+const onContextMenuHandler = () => (event: MouseEvent) =>
+  store.hooks.nodeContextMenu.trigger({
+    event,
+    node: node.value,
+  })
+const onDoubleClick = () => (event: MouseEvent) => store.hooks.nodeDoubleClick.trigger({ event, node: node.value })
 const onSelectNodeHandler = (event: MouseEvent) => {
   if (!props.draggable) {
     if (props.selectable) {
-      store.unsetNodesSelection()
-      if (!selected.value) store.addSelectedElements([props.node])
+      store.nodesSelectionActive = false
+      if (!node.value.selected) store.addSelectedNodes([node.value])
     }
-    store.hooks.elementClick.trigger({ event, element: props.node })
-    store.hooks.nodeClick.trigger({ event, node: props.node })
+    store.hooks.nodeClick.trigger({ event, node: node.value })
   }
 }
 const onDragStart: DraggableEventListener = ({ event }) => {
-  store.hooks.nodeDragStart.trigger({ event, node: props.node })
+  store.addSelectedNodes([])
+  store.hooks.nodeDragStart.trigger({ event, node: node.value })
 
-  if (props.selectNodesOnDrag && props.selectable) {
-    store.unsetNodesSelection()
+  if (store.selectNodesOnDrag && props.selectable) {
+    store.nodesSelectionActive = false
 
-    if (!selected.value) store.addSelectedElements([props.node])
-  } else if (!props.selectNodesOnDrag && !selected.value && props.selectable) {
-    store.unsetNodesSelection()
-    store.addSelectedElements([])
+    if (!node.value.selected) store.addSelectedNodes([node.value])
+  } else if (!store.selectNodesOnDrag && !node.value.selected && props.selectable) {
+    store.nodesSelectionActive = false
+    store.addSelectedNodes([])
   }
 }
-const onDrag: DraggableEventListener = ({ event, data: { deltaY, deltaX } }) => {
-  node.value.position = clampPosition(
-    {
-      x: (node.value.position.x += deltaX),
-      y: (node.value.position.y += deltaY),
-    },
-    store.nodeExtent,
-  )
-  node.value.__vf.isDragging = true
-  store.hooks.nodeDrag.trigger({ event, node: props.node })
+const onDrag: DraggableEventListener = ({ event, data: { deltaX, deltaY } }) => {
+  nextTick(() => store.updateNodePosition({ id: node.value.id, diff: { x: deltaX, y: deltaY }, dragging: true }))
+  store.hooks.nodeDrag.trigger({ event, node: node.value })
 }
-const onDragStop: DraggableEventListener = ({ event }) => {
-  const n = props.node
+const onDragStop: DraggableEventListener = ({ event, data: { deltaX, deltaY } }) => {
   // onDragStop also gets called when user just clicks on a node.
   // Because of that we set dragging to true inside the onDrag handler and handle the click here
-  if (!props.node.__vf.isDragging) {
-    if (props.selectable && !props.selectNodesOnDrag && !selected.value) {
-      store.addSelectedElements([n])
+  if (!node.value.dragging) {
+    if (props.selectable && !store.selectNodesOnDrag && !node.value.selected) {
+      store.addSelectedNodes([node.value])
     }
-    store.hooks.nodeClick.trigger({ event, node: n })
-    store.hooks.elementClick.trigger({ event, element: n })
+    store.hooks.nodeClick.trigger({ event, node: node.value })
     return
   }
-  node.value.__vf.isDragging = false
-  store.hooks.nodeDragStop.trigger({ event, node: n })
+  store.updateNodePosition({ id: node.value.id, diff: { x: deltaX, y: deltaY }, dragging: false })
+  store.hooks.nodeDragStop.trigger({ event, node: node.value })
 }
 
-const updateNodeDimensions = ({ nodeElement, forceUpdate }: NodeDimensionUpdate) => {
-  const dimensions = getDimensions(nodeElement)
-
-  const doUpdate =
-    dimensions.width &&
-    dimensions.height &&
-    (props.node.__vf.width !== dimensions.width || props.node.__vf.height !== dimensions.height || forceUpdate)
-
-  if (doUpdate) {
-    const handleBounds = getHandleBounds(nodeElement, store.transform[2])
-
-    node.value.__vf = {
-      ...node.value.__vf,
-      ...dimensions,
-      handleBounds,
-    }
+const updatePosition = (width: number, height: number) => {
+  const handleBounds = getHandleBounds(nodeElement.value, scale.value, id)
+  node.value.dimensions = {
+    width,
+    height,
   }
+  node.value.handleBounds = handleBounds
 }
 
-tryOnMounted(() => {
-  watch(
-    [() => props.node.__vf.width, () => props.node.__vf.height],
-    () => {
-      updateNodeDimensions({
-        id: props.node.id,
-        nodeElement: nodeElement.value,
-        forceUpdate: true,
-      })
-    },
-    { immediate: true },
+store.updateNodePosition({ id: node.value.id, diff: { x: 0, y: 0 } })
+onMounted(() => {
+  const dimensions = ref(getDimensions(nodeElement.value))
+  useResizeObserver(nodeElement, () => (dimensions.value = getDimensions(nodeElement.value)))
+  watch([() => node.value.type, () => node.value.sourcePosition, () => node.value.targetPosition], () =>
+    nextTick(() => updatePosition(dimensions.value.width, dimensions.value.height)),
   )
-  useResizeObserver(nodeElement, (entries) =>
-    entries.forEach((entry) => {
-      updateNodeDimensions({
-        id: entry.target.getAttribute('data-id') as string,
-        nodeElement: entry.target as HTMLDivElement,
-      })
-    }),
-  )
-
-  watch([() => props.node.type, () => props.node.sourcePosition, () => props.node.targetPosition], () => {
-    nextTick(() => {
-      updateNodeDimensions({
-        id: props.node.id,
-        nodeElement: nodeElement.value,
-        forceUpdate: true,
-      })
-    })
-  })
+  watch(dimensions, ({ width: w, height: h }) => nextTick(() => w > 0 && h > 0 && updatePosition(w, h)), { immediate: true })
 })
 </script>
 <script lang="ts">
@@ -142,35 +121,42 @@ export default {
 <template>
   <DraggableCore
     cancel=".nodrag"
-    :handle="props.node.dragHandle"
+    :handle="node.dragHandle"
     :disabled="!props.draggable"
-    :scale="props.scale"
+    :scale="scale"
     :grid="props.snapGrid"
     :enable-user-select-hack="false"
-    v-bind="props.draggable"
     @start="onDragStart"
     @move="onDrag"
     @stop="onDragStop"
   >
     <div
       ref="node-element"
+      :key="`node-${node.id}`"
       :class="[
         'vue-flow__node',
-        `vue-flow__node-${props.node.type}`,
+        `vue-flow__node-${node.type}`,
         {
-          selected,
+          dragging: node.dragging,
+          selected: node.selected,
           selectable: props.selectable,
         },
-        props.node.class,
+        node.class,
       ]"
       :style="{
-        zIndex: selected ? 10 : 3,
-        transform: `translate(${props.node.position.x}px,${props.node.position.y}px)`,
+        zIndex: node.dragging || node.selected ? 1000 : node.computedPosition.z,
+        transform: `translate(${node.computedPosition.x}px,${node.computedPosition.y}px)`,
         pointerEvents: props.selectable || props.draggable ? 'all' : 'none',
-        opacity: props.node.__vf.width !== null && props.node.__vf.height !== null ? 1 : 0,
-        ...props.node.style,
+        opacity:
+          store.dimensions.width !== 0 &&
+          store.dimensions.height !== 0 &&
+          node.dimensions.width !== 0 &&
+          node.dimensions.height !== 0
+            ? 1
+            : 0,
+        ...node.style,
       }"
-      :data-id="props.node.id"
+      :data-id="node.id"
       @mouseenter="onMouseEnterHandler"
       @mousemove="onMouseMoveHandler"
       @mouseleave="onMouseLeaveHandler"
@@ -180,37 +166,57 @@ export default {
     >
       <slot
         v-bind="{
-          id: props.node.id,
-          data: props.node.data,
-          type: props.node.type,
-          xPos: props.node.position.x,
-          yPos: props.node.position.y,
-          __vf: props.node.__vf,
-          selected,
+          selected: node.selected,
           connectable: props.connectable,
-          sourcePosition: props.node.sourcePosition,
-          targetPosition: props.node.targetPosition,
-          dragging: props.node.__vf.isDragging,
-          isValidTargetPos: props.node.isValidTargetPos,
-          isValidSourcePos: props.node.isValidSourcePos,
+          sourcePosition: node.sourcePosition,
+          targetPosition: node.targetPosition,
+          isValidTargetPos: node.isValidTargetPos,
+          isValidSourcePos: node.isValidSourcePos,
+          label: node.label,
+          class: node.class,
+          style: node.style,
+          hidden: node.hidden,
+          id: node.id,
+          type: node.type,
+          data: node.data,
+          dragging: node.dragging,
+          handleBounds: node.handleBounds,
+          parentNode: node.parentNode,
+          isParent: node.isParent,
+          computedPosition: node.computedPosition,
+          position: node.position,
+          draggable: props.draggable,
+          selectable: props.selectable,
+          children: node.children,
+          dimensions: node.dimensions,
         }"
       >
         <component
-          :is="props.component ?? props.node.type"
+          :is="props.component ?? node.type"
           v-bind="{
-            id: props.node.id,
-            data: props.node.data,
-            type: props.node.type,
-            xPos: props.node.position.x,
-            yPos: props.node.position.y,
-            __vf: props.node.__vf,
-            selected,
+            selected: node.selected,
             connectable: props.connectable,
-            sourcePosition: props.node.sourcePosition,
-            targetPosition: props.node.targetPosition,
-            dragging: props.node.__vf.isDragging,
-            isValidTargetPos: props.node.isValidTargetPos,
-            isValidSourcePos: props.node.isValidSourcePos,
+            sourcePosition: node.sourcePosition,
+            targetPosition: node.targetPosition,
+            isValidTargetPos: node.isValidTargetPos,
+            isValidSourcePos: node.isValidSourcePos,
+            label: node.label,
+            class: node.class,
+            style: node.style,
+            hidden: node.hidden,
+            id: node.id,
+            type: node.type,
+            data: node.data,
+            dragging: node.dragging,
+            handleBounds: node.handleBounds,
+            parentNode: node.parentNode,
+            isParent: node.isParent,
+            computedPosition: node.computedPosition,
+            position: node.position,
+            draggable: props.draggable,
+            selectable: props.selectable,
+            children: node.children,
+            dimensions: node.dimensions,
           }"
         />
       </slot>

@@ -1,54 +1,91 @@
-import { EventHook } from '@vueuse/core'
+import { EventHook, EventHookOn } from '@vueuse/core'
 import { MouseTouchEvent } from '@braks/revue-draggable'
-import { FlowTransform, FlowInstance, FlowElements } from './flow'
+import { FlowInstance, Dimensions, XYPosition } from './flow'
 import { GraphEdge } from './edge'
-import { GraphNode } from './node'
+import { CoordinateExtent, GraphNode, HandleBounds } from './node'
 import { Connection, OnConnectStartParams } from './connection'
+import { FlowTransform } from './zoom'
 
-export type FlowHook<T = any> = EventHook<T>
+export type NodeDimensionChange = {
+  id: string
+  type: 'dimensions'
+  dimensions?: Dimensions
+  position?: XYPosition
+  handleBounds?: HandleBounds
+  dragging?: boolean
+}
+export type NodeSelectionChange = {
+  id: string
+  type: 'select'
+  selected: boolean
+}
+export type NodeRemoveChange = {
+  id: string
+  type: 'remove'
+}
+export type NodeChange = NodeDimensionChange | NodeSelectionChange | NodeRemoveChange
 
-export interface FlowEvents {
-  elementClick: { event: MouseTouchEvent; element: GraphNode | GraphEdge }
-  elementsRemove: FlowElements
-  nodeDoubleClick: { event: MouseTouchEvent; node: GraphNode }
-  nodeClick: { event: MouseTouchEvent; node: GraphNode }
-  nodeMouseEnter: { event: MouseEvent; node: GraphNode }
-  nodeMouseMove: { event: MouseEvent; node: GraphNode }
-  nodeMouseLeave: { event: MouseEvent; node: GraphNode }
-  nodeContextMenu: { event: MouseEvent; node: GraphNode }
-  nodeDragStart: { event: MouseTouchEvent; node: GraphNode }
-  nodeDrag: { event: MouseTouchEvent; node: GraphNode }
-  nodeDragStop: { event: MouseTouchEvent; node: GraphNode }
+export type EdgeSelectionChange = NodeSelectionChange
+export type EdgeRemoveChange = NodeRemoveChange
+export type EdgeChange = EdgeSelectionChange | EdgeRemoveChange
+
+export type SelectionChange = EdgeSelectionChange | NodeSelectionChange
+export type RemoveChange = EdgeRemoveChange | NodeRemoveChange
+
+export type CreatePositionChangeParams = {
+  node: GraphNode
+  nodeExtent: CoordinateExtent
+  diff?: XYPosition
+  dragging?: boolean
+}
+
+export interface FlowEvents<N = any, E = N> {
+  nodesChange: NodeChange[]
+  edgesChange: EdgeChange[]
+  nodeDoubleClick: { event: MouseTouchEvent; node: GraphNode<N> }
+  nodeClick: { event: MouseTouchEvent; node: GraphNode<N> }
+  nodeMouseEnter: { event: MouseEvent; node: GraphNode<N> }
+  nodeMouseMove: { event: MouseEvent; node: GraphNode<N> }
+  nodeMouseLeave: { event: MouseEvent; node: GraphNode<N> }
+  nodeContextMenu: { event: MouseEvent; node: GraphNode<N> }
+  nodeDragStart: { event: MouseTouchEvent; node: GraphNode<N> }
+  nodeDrag: { event: MouseTouchEvent; node: GraphNode<N> }
+  nodeDragStop: { event: MouseTouchEvent; node: GraphNode<N> }
   connect: Connection
   connectStart: {
     event: MouseEvent
-  } & { [key in keyof OnConnectStartParams]: OnConnectStartParams[key] }
+  } & OnConnectStartParams
   connectStop: MouseEvent
   connectEnd: MouseEvent
-  load: FlowInstance
-  elementsProcessed: FlowElements
+  paneReady: FlowInstance<N, E>
   move: FlowTransform | undefined
   moveStart: FlowTransform | undefined
   moveEnd: FlowTransform | undefined
-  selectionChange: FlowElements | undefined
-  selectionDragStart: { event: MouseTouchEvent; nodes: GraphNode[] }
-  selectionDrag: { event: MouseTouchEvent; nodes: GraphNode[] }
-  selectionDragStop: { event: MouseTouchEvent; nodes: GraphNode[] }
-  selectionContextMenu: { event: MouseEvent; nodes: GraphNode[] }
+  selectionDragStart: { event: MouseTouchEvent; nodes: GraphNode<N>[] }
+  selectionDrag: { event: MouseTouchEvent; nodes: GraphNode<N>[] }
+  selectionDragStop: { event: MouseTouchEvent; nodes: GraphNode<N>[] }
+  selectionContextMenu: { event: MouseEvent; nodes: GraphNode<N>[] }
   paneScroll: WheelEvent | undefined
   paneClick: MouseEvent
   paneContextMenu: MouseEvent
-  edgeContextMenu: { event: MouseEvent; edge: GraphEdge }
-  edgeMouseEnter: { event: MouseEvent; edge: GraphEdge }
-  edgeMouseMove: { event: MouseEvent; edge: GraphEdge }
-  edgeMouseLeave: { event: MouseEvent; edge: GraphEdge }
-  edgeDoubleClick: { event: MouseEvent; edge: GraphEdge }
-  edgeClick: { event: MouseEvent; edge: GraphEdge }
-  edgeUpdateStart: { event: MouseEvent; edge: GraphEdge }
-  edgeUpdate: { edge: GraphEdge; connection: Connection }
-  edgeUpdateEnd: { event: MouseEvent; edge: GraphEdge }
+  edgeContextMenu: { event: MouseEvent; edge: GraphEdge<E> }
+  edgeMouseEnter: { event: MouseEvent; edge: GraphEdge<E> }
+  edgeMouseMove: { event: MouseEvent; edge: GraphEdge<E> }
+  edgeMouseLeave: { event: MouseEvent; edge: GraphEdge<E> }
+  edgeDoubleClick: { event: MouseEvent; edge: GraphEdge<E> }
+  edgeClick: { event: MouseEvent; edge: GraphEdge<E> }
+  edgeUpdateStart: { event: MouseEvent; edge: GraphEdge<E> }
+  edgeUpdate: { edge: GraphEdge<E>; connection: Connection }
+  edgeUpdateEnd: { event: MouseEvent; edge: GraphEdge<E> }
 }
 
-export type FlowHooks = { [key in keyof FlowEvents]: FlowHook<FlowEvents[key]> }
+export type FlowEvent = FlowEvents[keyof FlowEvents]
+export type FlowHook<T extends FlowEvent = any> = EventHook<T>
+export type FlowHookOn<T extends FlowEvent = any> = EventHookOn<T>
+
+export type FlowHooks<N = any, E = N> = { [key in keyof FlowEvents<N, E>]: FlowHook<FlowEvents<N, E>[key]> }
+export type FlowHooksOn<N = any, E = N> = {
+  [key in keyof FlowEvents<N, E> as `on${Capitalize<key>}`]: FlowHookOn<FlowEvents<N, E>[key]>
+}
 
 export type EmitFunc<T extends FlowHooks = FlowHooks> = (name: keyof T, ...args: any[]) => void

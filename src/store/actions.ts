@@ -1,93 +1,102 @@
-import { Elements, FlowActions, FlowGetters, FlowState } from '~/types'
-import { getConnectedEdges, getNodesInside, getRectOfNodes, parseElements, processElements } from '~/utils'
+import { CoordinateExtent, EdgeChange, Actions, Getters, State, GraphNode, Node, NodeChange, NodeDimensionChange } from '~/types'
+import {
+  createPositionChange,
+  createSelectionChange,
+  getSelectionChanges,
+  isEdge,
+  isGraphEdge,
+  isGraphNode,
+  isNode,
+  isParentSelected,
+  parseEdge,
+  parseNode,
+} from '~/utils'
 
-export default (state: FlowState, getters: FlowGetters): FlowActions => {
-  const setElements: FlowActions['setElements'] = async (elements, force = true) => {
-    const { nodes, edges } = parseElements(elements, state.elements, state.nodeExtent)
-    if (force) state.elements = []
-    await processElements([...nodes, ...edges], (processed) => {
-      state.elements = [...state.elements, ...processed]
+const getParent = (root: Node[], id: string): GraphNode | undefined => {
+  let node
+  root.some((n) => {
+    if (n.id === id) return (node = n)
+    if (n.children) return (node = getParent(n.children, id))
+    return false
+  })
+  return node
+}
+
+export const parseChildren = (
+  n: Node,
+  p: GraphNode | undefined,
+  arr: GraphNode[],
+  extent: CoordinateExtent,
+  getNode: (id: string) => GraphNode | undefined,
+) => {
+  const parent = typeof p === 'undefined' || typeof p !== 'object' ? getParent(arr, n.id) : p
+  const parsed = parseNode(n, extent, {
+    ...getNode(n.id),
+    parentNode: parent,
+  })
+  arr.push(parsed)
+  if (n.children && n.children.length) {
+    n.children.forEach((c) => parseChildren(c, parsed, arr, extent, getNode))
+  }
+}
+
+export default (state: State, getters: Getters): Actions => {
+  const updateNodePosition: Actions['updateNodePosition'] = ({ id, diff = { x: 0, y: 0 }, dragging }) => {
+    const changes: NodeDimensionChange[] = []
+
+    state.nodes.forEach((node) => {
+      if (node.selected) {
+        if (!node.parentNode) {
+          changes.push(createPositionChange({ node, diff, nodeExtent: state.nodeExtent, dragging }))
+        } else if (!isParentSelected(node)) {
+          changes.push(createPositionChange({ node, diff, nodeExtent: state.nodeExtent, dragging }))
+        }
+      } else if (node.id === id) {
+        changes.push(createPositionChange({ node, diff, nodeExtent: state.nodeExtent, dragging }))
+      }
     })
-    state.hooks.elementsProcessed.trigger(state.elements)
-  }
-  const setUserSelection: FlowActions['setUserSelection'] = (mousePos) => {
-    state.selectionActive = true
-    state.userSelectionRect = {
-      width: 0,
-      height: 0,
-      startX: mousePos.x,
-      startY: mousePos.y,
-      x: mousePos.x,
-      y: mousePos.y,
-      draw: true,
-    }
-  }
-  const updateUserSelection: FlowActions['updateUserSelection'] = (mousePos) => {
-    const startX = state.userSelectionRect.startX
-    const startY = state.userSelectionRect.startY
 
-    const nextUserSelectRect: FlowState['userSelectionRect'] = {
-      ...state.userSelectionRect,
-      x: mousePos.x < startX ? mousePos.x : state.userSelectionRect.x,
-      y: mousePos.y < startY ? mousePos.y : state.userSelectionRect.y,
-      width: Math.abs(mousePos.x - startX),
-      height: Math.abs(mousePos.y - startY),
-    }
-    const selectedNodes = getNodesInside(getters.getNodes.value, state.userSelectionRect, state.transform)
-    const selectedEdges = getConnectedEdges(selectedNodes, getters.getEdges.value)
+    if (changes.length) state.hooks.nodesChange.trigger(changes)
+  }
+  const addSelectedNodes: Actions['addSelectedNodes'] = (nodes) => {
+    const selectedNodesIds = nodes.map((n) => n.id)
 
-    const nextSelectedElements = [...selectedNodes, ...selectedEdges]
-    state.userSelectionRect = nextUserSelectRect
-    state.selectedElements = nextSelectedElements
-  }
-  const unsetUserSelection: FlowActions['unsetUserSelection'] = () => {
-    state.selectionActive = false
-    state.userSelectionRect.draw = false
+    let changedNodes: NodeChange[]
+    if (state.multiSelectionActive) changedNodes = selectedNodesIds.map((nodeId) => createSelectionChange(nodeId, true))
+    else changedNodes = getSelectionChanges(state.nodes, selectedNodesIds)
 
-    if (!getters.getSelectedNodes || getters.getSelectedNodes.value.length === 0) {
-      state.selectedElements = undefined
-      state.hooks.selectionChange.trigger(undefined)
-      state.nodesSelectionActive = false
-    } else {
-      state.selectedNodesBbox = getRectOfNodes(getters.getSelectedNodes.value)
-      state.nodesSelectionActive = true
-    }
+    if (changedNodes.length) state.hooks.nodesChange.trigger(changedNodes)
   }
-  const addSelectedElements: FlowActions['addSelectedElements'] = (elements: any) => {
-    const selectedElementsArr = Array.isArray(elements) ? elements : [elements]
-    const selectedElementsUpdated = selectedElementsArr.filter(
-      (el) => !state.selectedElements?.some((e) => el.id === e.id),
-    ).length
-    state.selectedElements = selectedElementsUpdated ? selectedElementsArr : state.selectedElements
-    if (selectedElementsUpdated) state.hooks.selectionChange.trigger(selectedElementsArr)
+  const addSelectedEdges: Actions['addSelectedEdges'] = (edges) => {
+    const selectedEdgesIds = edges.map((e) => e.id)
+
+    let changedEdges: EdgeChange[]
+    if (state.multiSelectionActive) changedEdges = selectedEdgesIds.map((nodeId) => createSelectionChange(nodeId, true))
+    else changedEdges = getSelectionChanges(state.nodes, selectedEdgesIds)
+
+    if (changedEdges.length) state.hooks.edgesChange.trigger(changedEdges)
   }
-  const initD3Zoom: FlowActions['initD3Zoom'] = ({ d3ZoomHandler, d3Zoom, d3Selection }) => {
-    state.d3Zoom = d3Zoom
-    state.d3Selection = d3Selection
-    state.d3ZoomHandler = d3ZoomHandler
+  const addSelectedElements: Actions['addSelectedElements'] = (elements) => {
+    addSelectedNodes(elements.filter(isGraphNode))
+    addSelectedEdges(elements.filter(isGraphEdge))
   }
-  const setMinZoom: FlowActions['setMinZoom'] = (minZoom: any) => {
+  const setMinZoom: Actions['setMinZoom'] = (minZoom: any) => {
     state.d3Zoom?.scaleExtent([minZoom, state.maxZoom])
     state.minZoom = minZoom
   }
-  const setMaxZoom: FlowActions['setMaxZoom'] = (maxZoom: any) => {
+  const setMaxZoom: Actions['setMaxZoom'] = (maxZoom: any) => {
     state.d3Zoom?.scaleExtent([state.minZoom, maxZoom])
     state.maxZoom = maxZoom
   }
-  const setTranslateExtent: FlowActions['setTranslateExtent'] = (translateExtent: any) => {
+  const setTranslateExtent: Actions['setTranslateExtent'] = (translateExtent: any) => {
     state.d3Zoom?.translateExtent(translateExtent)
     state.translateExtent = translateExtent
   }
-  const resetSelectedElements: FlowActions['resetSelectedElements'] = () => {
-    state.selectedElements = undefined
+  const resetSelectedElements: Actions['resetSelectedElements'] = () => {
+    addSelectedNodes([])
+    addSelectedEdges([])
   }
-  const unsetNodesSelection: FlowActions['unsetNodesSelection'] = () => {
-    state.nodesSelectionActive = false
-  }
-  const updateSize: FlowActions['updateSize'] = (size) => {
-    state.dimensions = size
-  }
-  const setConnectionNodeId: FlowActions['setConnectionNodeId'] = ({
+  const setConnectionNodeId: Actions['setConnectionNodeId'] = ({
     connectionHandleId,
     connectionHandleType,
     connectionNodeId,
@@ -96,16 +105,51 @@ export default (state: FlowState, getters: FlowGetters): FlowActions => {
     state.connectionHandleId = connectionHandleId
     state.connectionHandleType = connectionHandleType
   }
-  const setInteractive: FlowActions['setInteractive'] = (isInteractive) => {
+  const setInteractive: Actions['setInteractive'] = (isInteractive) => {
     state.nodesDraggable = isInteractive
     state.nodesConnectable = isInteractive
     state.elementsSelectable = isInteractive
   }
-  const addElements: FlowActions['addElements'] = (elements: Elements) => {
-    setElements(elements, false)
+
+  const setNodes: Actions['setNodes'] = (nodes, extent?: CoordinateExtent) => {
+    if (!state.initialized && !nodes.length) return
+    nodes = nodes.flatMap((node) => {
+      const children: GraphNode[] = []
+      parseChildren(node, undefined, children, extent ?? state.nodeExtent, getters.getNode.value)
+      return children
+    })
+    state.nodes = <GraphNode[]>nodes
   }
-  const setState: FlowActions['setState'] = (opts) => {
-    if (typeof opts.loading !== 'undefined') state.loading = opts.loading
+  const setEdges: Actions['setEdges'] = (edges) => {
+    if (!state.initialized && !edges.length) return
+    state.edges = edges.map((edge) => {
+      const sourceNode = getters.getNode.value(edge.source)!
+      const targetNode = getters.getNode.value(edge.target)!
+      if (!sourceNode || typeof sourceNode === 'undefined')
+        console.warn(`couldn't create edge for source id: ${edge.source}; edge id: ${edge.id}`)
+      if (!targetNode || typeof targetNode === 'undefined')
+        console.warn(`couldn't create edge for target id: ${edge.target}; edge id: ${edge.id}`)
+
+      return {
+        ...parseEdge(edge, {
+          ...getters.getEdge.value(edge.id),
+        }),
+        sourceNode,
+        targetNode,
+      }
+    })
+  }
+
+  const setElements: Actions['setElements'] = (elements, extent) => {
+    if (!state.initialized && !elements.length) return
+    setNodes(elements.filter(isNode), extent)
+    setEdges(elements.filter(isEdge))
+  }
+
+  const setState: Actions['setState'] = (opts) => {
+    if (typeof opts.modelValue !== 'undefined') setElements(opts.modelValue, opts.nodeExtent ?? state.nodeExtent)
+    if (typeof opts.nodes !== 'undefined') setNodes(opts.nodes, opts.nodeExtent ?? state.nodeExtent)
+    if (typeof opts.edges !== 'undefined') setEdges(opts.edges)
     if (typeof opts.panOnScroll !== 'undefined') state.panOnScroll = opts.panOnScroll
     if (typeof opts.panOnScrollMode !== 'undefined') state.panOnScrollMode = opts.panOnScrollMode
     if (typeof opts.panOnScrollSpeed !== 'undefined') state.panOnScrollSpeed = opts.panOnScrollSpeed
@@ -116,17 +160,13 @@ export default (state: FlowState, getters: FlowGetters): FlowActions => {
     if (typeof opts.zoomOnPinch !== 'undefined') state.zoomOnPinch = opts.zoomOnPinch
     if (typeof opts.defaultZoom !== 'undefined') state.defaultZoom = opts.defaultZoom
     if (typeof opts.defaultPosition !== 'undefined') state.defaultPosition = opts.defaultPosition
-    if (typeof opts.edgeTypes !== 'undefined') state.edgeTypes = opts.edgeTypes
-    if (typeof opts.nodeTypes !== 'undefined') state.nodeTypes = opts.nodeTypes
-    if (typeof opts.storageKey !== 'undefined') state.storageKey = opts.storageKey
     if (typeof opts.edgeUpdaterRadius !== 'undefined') state.edgeUpdaterRadius = opts.edgeUpdaterRadius
     if (typeof opts.elementsSelectable !== 'undefined') state.elementsSelectable = opts.elementsSelectable
     if (typeof opts.onlyRenderVisibleElements !== 'undefined') state.onlyRenderVisibleElements = opts.onlyRenderVisibleElements
     if (typeof opts.edgesUpdatable !== 'undefined') state.edgesUpdatable = opts.edgesUpdatable
     if (typeof opts.nodesConnectable !== 'undefined') state.nodesConnectable = opts.nodesConnectable
     if (typeof opts.nodesDraggable !== 'undefined') state.nodesDraggable = opts.nodesDraggable
-    if (typeof opts.arrowHeadColor !== 'undefined') state.arrowHeadColor = opts.arrowHeadColor
-    if (typeof opts.markerEndId !== 'undefined') state.markerEndId = opts.markerEndId
+    if (typeof opts.defaultMarkerColor !== 'undefined') state.defaultMarkerColor = opts.defaultMarkerColor
     if (typeof opts.deleteKeyCode !== 'undefined') state.deleteKeyCode = opts.deleteKeyCode
     if (typeof opts.selectionKeyCode !== 'undefined') state.selectionKeyCode = opts.selectionKeyCode
     if (typeof opts.zoomActivationKeyCode !== 'undefined') state.zoomActivationKeyCode = opts.zoomActivationKeyCode
@@ -134,7 +174,8 @@ export default (state: FlowState, getters: FlowGetters): FlowActions => {
     if (typeof opts.snapToGrid !== 'undefined') state.snapToGrid = opts.snapToGrid
     if (typeof opts.snapGrid !== 'undefined') state.snapGrid = opts.snapGrid
     if (typeof opts.nodeExtent !== 'undefined') state.nodeExtent = opts.nodeExtent
-    if (!state.isReady)
+    if (typeof opts.fitViewOnInit !== 'undefined') state.fitViewOnInit = opts.fitViewOnInit
+    if (!state.paneReady)
       until(() => state.d3Zoom)
         .not.toBeUndefined()
         .then(() => {
@@ -147,23 +188,22 @@ export default (state: FlowState, getters: FlowGetters): FlowActions => {
       if (typeof opts.minZoom !== 'undefined') setMinZoom(opts.minZoom)
       if (typeof opts.translateExtent !== 'undefined') setTranslateExtent(opts.translateExtent)
     }
+    if (!state.initialized) state.initialized = true
   }
   return {
+    updateNodePosition,
     setElements,
-    setUserSelection,
-    updateUserSelection,
-    unsetUserSelection,
+    setNodes,
+    setEdges,
     addSelectedElements,
-    initD3Zoom,
+    addSelectedNodes,
+    addSelectedEdges,
     setMinZoom,
     setMaxZoom,
     setTranslateExtent,
     resetSelectedElements,
-    unsetNodesSelection,
-    updateSize,
     setConnectionNodeId,
     setInteractive,
-    addElements,
     setState,
   }
 }

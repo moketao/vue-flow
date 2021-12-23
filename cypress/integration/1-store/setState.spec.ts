@@ -1,20 +1,21 @@
-import { useStore } from '~/composables'
-import { initialState } from '~/utils'
-import { FlowState, FlowStore } from '~/types'
+import { useVueFlow } from '~/composables'
+import { State, FlowStore } from '~/types'
+import useState from '~/store/state'
 describe('test store state', () => {
   let store: FlowStore
 
-  beforeEach(() => (store = useStore()))
+  beforeEach(() => ({ store } = useVueFlow()))
 
   it('has any initial state', () => {
     expect(store.state).to.exist
   })
 
   it('has default initial state', () => {
-    const initial = initialState()
+    const initial = useState()
     Object.keys(store.state).forEach((state) => {
-      const storedState = store[<keyof FlowState>state]
-      const initialVal = initial[<keyof FlowState>state]
+      const storedState = store[<keyof State>state]
+      const initialVal = initial[<keyof State>state]
+      if (state === 'initialized') return expect(storedState).to.be.true
       expect(JSON.stringify(storedState)).to.eq(JSON.stringify(initialVal))
     })
   })
@@ -27,7 +28,7 @@ describe('test store state', () => {
   })
 
   it('takes initial options', () => {
-    const store = useStore({
+    const { store } = useVueFlow({
       zoomOnScroll: false,
     })
     expect(store.zoomOnScroll).to.eq(false)
@@ -35,14 +36,27 @@ describe('test store state', () => {
 
   it('gets custom node types', () => {
     store.setState({
-      nodeTypes: ['custom'],
+      nodes: [
+        {
+          id: '1',
+          position: { x: 0, y: 0 },
+          type: 'custom',
+        },
+      ],
     })
     expect(Object.keys(store.getNodeTypes)).to.contain('custom')
   })
 
   it('gets custom edge types', () => {
     store.setState({
-      edgeTypes: ['custom'],
+      edges: [
+        {
+          id: '1',
+          source: '1',
+          target: '2',
+          type: 'custom',
+        },
+      ],
     })
     expect(Object.keys(store.getEdgeTypes)).to.contain('custom')
   })

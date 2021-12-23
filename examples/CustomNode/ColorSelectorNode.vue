@@ -7,14 +7,6 @@ interface ColorSelectorNodeProps extends NodeProps {
     color: string
     onChange: (event: any) => void
   }
-  type: string
-  selected?: boolean
-  connectable?: boolean
-  xPos?: number
-  yPos?: number
-  targetPosition?: Position
-  sourcePosition?: Position
-  dragging?: boolean
 }
 const props = defineProps<ColorSelectorNodeProps>()
 
@@ -24,14 +16,17 @@ const sourceHandleStyleB: CSSProperties = { ...targetHandleStyle, bottom: '10px'
 
 const onConnect = (params: Connection | Edge) => console.log('handle onConnect', params)
 </script>
+<script lang="ts">
+export default {
+  inheritAttrs: false,
+}
+</script>
 <template>
-  <div class="vue-flow__node-color-selector">
-    <Handle type="target" :position="Position.Left" :style="targetHandleStyle" :on-connect="onConnect" />
-    <div>
-      Custom Color Picker Node: <strong>{{ data.color }}</strong>
-    </div>
-    <input class="nodrag" type="color" :value="data.color" @input="props.data.onChange" />
-    <Handle id="a" type="source" :position="Position.Right" :style="sourceHandleStyleA" />
-    <Handle id="b" type="source" :position="Position.Right" :style="sourceHandleStyleB" />
+  <Handle type="target" :position="Position.Left" :style="targetHandleStyle" :on-connect="onConnect" />
+  <div>
+    Custom Color Picker Node: <strong>{{ data.color }}</strong>
   </div>
+  <input class="nodrag" type="color" :value="data.color" @input="props.data.onChange" />
+  <Handle id="a" type="source" :position="Position.Right" :style="sourceHandleStyleA" />
+  <Handle id="b" type="source" :position="Position.Right" :style="sourceHandleStyleB" />
 </template>

@@ -1,47 +1,17 @@
 <script lang="ts" setup>
-import { CSSProperties } from 'vue'
-import { ArrowHeadType, EdgeProps, EdgeTextProps, ElementId, Position } from '../../types'
+import { Position } from '../../types'
+import type { EdgeProps } from '../../types/edge'
 import SmoothStepEdge from './SmoothStepEdge.vue'
 
-interface StepEdgeProps extends EdgeProps {
-  id: ElementId
-  source: ElementId
-  target: ElementId
-  sourceX: number
-  sourceY: number
-  targetX: number
-  targetY: number
-  selected?: boolean
-  animated?: boolean
-  sourcePosition: Position
-  targetPosition: Position
-  label?:
-    | string
-    | {
-        component: any
-        props?: Record<string, any> & Partial<EdgeTextProps>
-      }
-  labelStyle?: CSSProperties
-  labelShowBg?: boolean
-  labelBgStyle?: CSSProperties
-  labelBgPadding?: [number, number]
-  labelBgBorderRadius?: number
-  arrowHeadType?: ArrowHeadType
-  markerEndId?: string
-  sourceHandleId?: ElementId | null
-  targetHandleId?: ElementId | null
-}
-
-const props = withDefaults(defineProps<StepEdgeProps>(), {
+const props = withDefaults(defineProps<EdgeProps>(), {
   selected: false,
-  sourcePosition: Position.Bottom,
-  targetPosition: Position.Top,
+  sourcePosition: 'bottom' as Position,
+  targetPosition: 'top' as Position,
   label: '',
   labelStyle: () => ({}),
   labelShowBg: true,
   labelBgStyle: () => ({}),
 })
-const attrs = useAttrs() as Record<'style', CSSProperties>
 </script>
 <script lang="ts">
 export default {
@@ -49,7 +19,7 @@ export default {
 }
 </script>
 <template>
-  <SmoothStepEdge v-bind="{ ...props, ...attrs }" :border-radius="0">
+  <SmoothStepEdge v-bind="props" :border-radius="0">
     <slot />
   </SmoothStepEdge>
 </template>

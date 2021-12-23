@@ -1,32 +1,19 @@
 import { ComputedRef, ToRefs } from 'vue'
 import { UnwrapNestedRefs } from '@vue/reactivity'
-import {
-  Dimensions,
-  ElementId,
-  Elements,
-  FlowElements,
-  FlowInstance,
-  FlowOptions,
-  Rect,
-  SelectionRect,
-  SnapGrid,
-  Transform,
-  XYPosition,
-} from './flow'
-import { HandleType, EdgeComponent, NodeComponent, NodeTypes, EdgeTypes } from './components'
+import { Dimensions, Elements, FlowElements, FlowInstance, FlowOptions, Rect, SnapGrid, Transform, XYPosition } from './flow'
+import { HandleType, EdgeComponent, NodeComponent } from './components'
 import { ConnectionLineType, ConnectionMode, SetConnectionId } from './connection'
-import { GraphEdge } from './edge'
-import { NodeExtent, GraphNode, TranslateExtent } from './node'
-import { D3Selection, D3Zoom, D3ZoomHandler, InitD3ZoomPayload, KeyCode, PanOnScrollMode } from './zoom'
-import { FlowHooks } from './hooks'
+import { Edge, GraphEdge } from './edge'
+import { GraphNode, CoordinateExtent, Node } from './node'
+import { D3Selection, D3Zoom, D3ZoomHandler, KeyCode, PanOnScrollMode } from './zoom'
+import { FlowHooks, FlowHooksOn } from './hooks'
 
-export interface FlowState extends Omit<FlowOptions, 'elements' | 'id'> {
+export interface State<N = any, E = N> extends Omit<FlowOptions<N, E>, 'id' | 'modelValue'> {
   hooks: FlowHooks
   instance?: FlowInstance
 
-  elements: FlowElements
-  nodeTypes: NodeTypes
-  edgeTypes: EdgeTypes
+  nodes: GraphNode<N>[]
+  edges: GraphEdge<E>[]
 
   d3Zoom?: D3Zoom
   d3Selection?: D3Selection
@@ -34,26 +21,24 @@ export interface FlowState extends Omit<FlowOptions, 'elements' | 'id'> {
   minZoom: number
   maxZoom: number
   defaultZoom: number
-  translateExtent: TranslateExtent
-  nodeExtent: NodeExtent
+  translateExtent: CoordinateExtent
+  nodeExtent: CoordinateExtent
   dimensions: Dimensions
   transform: Transform
   onlyRenderVisibleElements: boolean
   defaultPosition: [number, number]
 
-  selectedElements?: FlowElements
-  selectedNodesBbox?: Rect
+  selectedNodesBbox: Rect
   nodesSelectionActive: boolean
   selectionActive: boolean
-  userSelectionRect: SelectionRect
   multiSelectionActive: boolean
   deleteKeyCode: KeyCode
   selectionKeyCode: KeyCode
   multiSelectionKeyCode: KeyCode
   zoomActivationKeyCode: KeyCode
 
-  connectionNodeId?: ElementId
-  connectionHandleId?: ElementId
+  connectionNodeId?: string
+  connectionHandleId?: string
   connectionHandleType?: HandleType
   connectionPosition: XYPosition
   connectionMode: ConnectionMode
@@ -62,7 +47,7 @@ export interface FlowState extends Omit<FlowOptions, 'elements' | 'id'> {
 
   snapToGrid: boolean
   snapGrid: SnapGrid
-  arrowHeadColor: string
+  defaultMarkerColor: string
 
   edgesUpdatable: boolean
   nodesDraggable: boolean
@@ -78,37 +63,46 @@ export interface FlowState extends Omit<FlowOptions, 'elements' | 'id'> {
   zoomOnDoubleClick: boolean
   preventScrolling: boolean
 
-  isReady: boolean
+  paneReady: boolean
+  initialized: boolean
+  applyDefault: boolean
 
   vueFlowVersion: string
 }
 
-export interface FlowActions {
-  setElements: (elements: Elements, init?: boolean) => Promise<void>
-  setUserSelection: (mousePos: XYPosition) => void
-  updateUserSelection: (mousePos: XYPosition) => void
-  unsetUserSelection: () => void
-  addSelectedElements: (elements: FlowElements) => void
-  initD3Zoom: (payload: InitD3ZoomPayload) => void
+export interface Actions<N = any, E = N> {
+  setElements: (elements: Elements<N, E>, extent?: CoordinateExtent) => void
+  setNodes: (nodes: Node<N>[], extent?: CoordinateExtent) => void
+  setEdges: (edges: Edge<E>[]) => void
+  addSelectedElements: (elements: FlowElements<N, E>) => void
+  addSelectedEdges: (edges: GraphEdge<E>[]) => void
+  addSelectedNodes: (nodes: GraphNode<N>[]) => void
   setMinZoom: (zoom: number) => void
   setMaxZoom: (zoom: number) => void
-  setTranslateExtent: (translateExtent: TranslateExtent) => void
+  setTranslateExtent: (translateExtent: CoordinateExtent) => void
   resetSelectedElements: () => void
-  unsetNodesSelection: () => void
-  updateSize: (size: Dimensions) => void
   setConnectionNodeId: (payload: SetConnectionId) => void
   setInteractive: (isInteractive: boolean) => void
-  addElements: (elements: Elements) => void
-  setState: (state: Partial<FlowOptions>) => void
+  setState: (state: Partial<FlowOptions<N, E>>) => void
+  updateNodePosition: ({ id, diff, dragging }: { id?: string; diff?: XYPosition; dragging?: boolean }) => void
 }
 
-export interface FlowGetters {
+export interface Getters<N = any, E = N> {
   getEdgeTypes: ComputedRef<Record<string, EdgeComponent>>
   getNodeTypes: ComputedRef<Record<string, NodeComponent>>
-  getNodes: ComputedRef<GraphNode[]>
-  getEdges: ComputedRef<GraphEdge[]>
-  getSelectedNodes: ComputedRef<GraphNode[]>
+  getNodes: ComputedRef<GraphNode<N>[]>
+  getEdges: ComputedRef<GraphEdge<E>[]>
+  getNode: ComputedRef<(id: string) => GraphNode<N> | undefined>
+  getEdge: ComputedRef<(id: string) => GraphEdge<E> | undefined>
+  getSelectedElements: ComputedRef<FlowElements<N, E>>
+  getSelectedNodes: ComputedRef<GraphNode<N>[]>
+  getSelectedEdges: ComputedRef<GraphEdge<E>[]>
 }
-
-export type Store = { id: string; state: FlowState } & ToRefs<FlowState> & FlowActions & FlowGetters
-export type FlowStore = UnwrapNestedRefs<Store>
+interface StoreBase<N = any, E = N> {
+  state: State<N, E>
+  actions: Actions<N, E>
+  getters: Getters<N, E>
+  hooksOn: FlowHooksOn<N, E>
+}
+export type Store<N = any, E = N> = StoreBase & ToRefs<State<N, E>> & Actions<N, E> & Getters<N, E>
+export type FlowStore<N = any, E = N> = UnwrapNestedRefs<Store<N, E>>

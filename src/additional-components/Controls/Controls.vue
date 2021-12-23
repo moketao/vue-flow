@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { FitViewParams } from '../../types'
-import { useZoomPanHelper, useStore } from '../../composables'
+import { useZoomPanHelper, useVueFlow } from '../../composables'
+import type { ControlProps, ControlEvents } from '../../types/components'
 import ControlButton from './ControlButton.vue'
 import PlusIcon from '~/assets/icons/plus.svg'
 import MinusIcon from '~/assets/icons/minus.svg'
@@ -8,30 +8,14 @@ import Fitview from '~/assets/icons/fitview.svg'
 import Lock from '~/assets/icons/lock.svg'
 import Unlock from '~/assets/icons/unlock.svg'
 
-interface ControlProps {
-  showZoom?: boolean
-  showFitView?: boolean
-  showInteractive?: boolean
-  fitViewParams?: FitViewParams
-}
-
-interface ControlEvents {
-  (event: 'zoom-in'): void
-  (event: 'zoom-out'): void
-  (event: 'fit-view'): void
-  (event: 'interaction-change', active: boolean): void
-  (event: 'line-width'): void
-}
-
 const props = withDefaults(defineProps<ControlProps>(), {
   showZoom: true,
   showFitView: true,
   showInteractive: true,
-  showLineWidth: true,
 })
 const emit = defineEmits<ControlEvents>()
 
-const store = useStore()
+const { store } = useVueFlow()
 const { zoomIn, zoomOut, fitView } = useZoomPanHelper()
 
 const isInteractive = computed(() => store.nodesDraggable && store.nodesConnectable && store.elementsSelectable)
@@ -54,11 +38,6 @@ const onFitViewHandler = () => {
 const onInteractiveChangeHandler = () => {
   store.setInteractive(!isInteractive.value)
   emit('interaction-change', !isInteractive.value)
-}
-
-const onLineWidthHandler = () => {
-  store.setInteractive(!isInteractive.value)
-  emit('line-width')
 }
 </script>
 <script lang="ts">

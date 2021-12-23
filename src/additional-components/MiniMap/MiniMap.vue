@@ -1,18 +1,9 @@
 <script lang="ts" setup>
-import { GraphNode, ShapeRendering } from '../../types'
-import { useStore, useWindow } from '../../composables'
+import { ShapeRendering, StringFunc } from '../../types'
+import { useVueFlow, useWindow } from '../../composables'
 import { getBoundsofRects, getRectOfNodes } from '../../utils'
+import type { MiniMapProps } from '../../types/components'
 import MiniMapNode from './MiniMapNode.vue'
-
-type StringFunc = (node: GraphNode) => string
-interface MiniMapProps {
-  nodeColor?: string | StringFunc
-  nodeStrokeColor?: string | StringFunc
-  nodeClassName?: string | StringFunc
-  nodeBorderRadius?: number
-  nodeStrokeWidth?: number
-  maskColor?: string
-}
 
 const props = withDefaults(defineProps<MiniMapProps>(), {
   nodeStrokeColor: '#555',
@@ -29,7 +20,7 @@ const window = useWindow()
 const defaultWidth = 200
 const defaultHeight = 150
 
-const store = useStore()
+const { store } = useVueFlow()
 
 const elementWidth = attrs.style?.width ?? defaultWidth
 const elementHeight = attrs.style?.height ?? defaultHeight
@@ -93,10 +84,8 @@ export default {
   >
     <template v-for="node of store.getNodes" :key="`mini-map-node-${node.id}`">
       <slot
-        :x="node.position.x"
-        :y="node.position.y"
-        :width="node.__vf.width"
-        :height="node.__vf.height"
+        :position="node.computedPosition"
+        :dimensions="node.dimensions"
         :style="node.style"
         :class="nodeClassNameFunc(node)"
         :color="nodeColorFunc(node)"
@@ -106,10 +95,8 @@ export default {
         :shape-rendering="shapeRendering"
       >
         <MiniMapNode
-          :x="node.position.x"
-          :y="node.position.y"
-          :width="node.__vf.width"
-          :height="node.__vf.height"
+          :position="node.computedPosition"
+          :dimensions="node.dimensions"
           :style="node.style"
           :class="nodeClassNameFunc(node)"
           :color="nodeColorFunc(node)"

@@ -1,21 +1,5 @@
 <script lang="ts" setup>
-import { CSSProperties } from 'vue'
-
-interface EdgeTextProps {
-  x: number
-  y: number
-  label?:
-    | string
-    | {
-        component: any
-        props?: Record<string, any> & Partial<EdgeTextProps>
-      }
-  labelStyle?: CSSProperties
-  labelShowBg?: boolean
-  labelBgStyle?: CSSProperties
-  labelBgPadding?: [number, number]
-  labelBgBorderRadius?: number
-}
+import type { EdgeTextProps } from '../../types/components'
 
 const props = withDefaults(defineProps<EdgeTextProps>(), {
   labelStyle: () => ({}),

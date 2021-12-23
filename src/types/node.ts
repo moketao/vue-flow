@@ -1,64 +1,67 @@
 import { CSSProperties } from 'vue'
-import { DraggableOptions } from '@braks/revue-draggable'
-import { XYPosition, ElementId, Position, SnapGrid } from './flow'
-import { HandleElement, NodeTypes, ValidConnectionFunc } from './components'
+import { XYPosition, Position, SnapGrid, Element, XYZPosition, Dimensions } from './flow'
+import { HandleElement, ValidConnectionFunc } from './components'
 
-export interface VFInternals {
-  isDragging?: boolean
-  width: number
-  height: number
-  handleBounds: {
-    source?: HandleElement[]
-    target?: HandleElement[]
-  }
+export type CoordinateExtent = [[number, number], [number, number]]
+
+export type HandleBounds = {
+  source?: HandleElement[]
+  target?: HandleElement[]
 }
 
-export type Draggable = Omit<DraggableOptions, 'scale' | 'grid' | 'enableUserSelectHack' | 'enableTransformFix'> | boolean
-
-export interface Node<T = any> {
-  id: ElementId
+export interface Node<T = any> extends Element<T> {
   position: XYPosition
-  type?: NodeTypes[number]
-  class?: string
-  style?: CSSProperties
-  data?: T
   targetPosition?: Position
   sourcePosition?: Position
-  isHidden?: boolean
-  draggable?: Draggable
+  draggable?: boolean
   selectable?: boolean
   connectable?: boolean
   dragHandle?: string
   snapGrid?: SnapGrid
   isValidTargetPos?: ValidConnectionFunc
   isValidSourcePos?: ValidConnectionFunc
+  extent?: 'parent' | CoordinateExtent
+  children?: Node<T>[]
+  dimensions?: Dimensions
 }
 
 export interface GraphNode<T = any> extends Node<T> {
-  __vf: VFInternals
+  computedPosition: XYZPosition
+  handleBounds: HandleBounds
+  dimensions: Dimensions
+  parentNode?: GraphNode<T>
+  isParent?: boolean
+  selected?: boolean
+  dragging?: boolean
 }
 
-export interface NodeProps<T = any> extends GraphNode {
-  id: ElementId
+export interface NodeProps<T = any> {
+  id: string
+  dimensions: Dimensions
+  handleBounds: HandleBounds
+  computedPosition: XYZPosition
+  position: XYPosition
+  draggable?: boolean
+  selectable?: boolean
+  connectable?: boolean
+  label?:
+    | string
+    | {
+        props?: any
+        component: any
+      }
+  class?: string
+  style?: CSSProperties
+  hidden?: boolean
   type?: string
   data?: T
   selected?: boolean
-  connectable?: boolean
-  xPos?: number
-  yPos?: number
   targetPosition?: Position
   sourcePosition?: Position
   dragging?: boolean
   isValidTargetPos?: ValidConnectionFunc
   isValidSourcePos?: ValidConnectionFunc
-  __vf: VFInternals
-}
-
-export type TranslateExtent = [[number, number], [number, number]]
-export type NodeExtent = TranslateExtent
-
-export type NodeDimensionUpdate = {
-  id: ElementId
-  nodeElement: HTMLDivElement
-  forceUpdate?: boolean
+  parentNode?: any
+  isParent?: boolean
+  children?: Node<T>[]
 }

@@ -1,12 +1,14 @@
-import { FlowGetters, FlowState, GraphEdge, GraphNode } from '~/types'
-import { defaultEdgeTypes, defaultNodeTypes, getNodesInside, getSourceTargetNodes, isEdge, isGraphNode } from '~/utils'
+import { defaultEdgeTypes, defaultNodeTypes } from './state'
+import { Getters, State, GraphEdge, GraphNode } from '~/types'
+import { getNodesInside, isEdgeVisible } from '~/utils'
 
-export default (state: FlowState): FlowGetters => {
+export default (state: State): Getters => {
   const getEdgeTypes = computed(() => {
     const edgeTypes: Record<string, any> = {
       ...defaultEdgeTypes,
     }
-    state.edgeTypes?.forEach((n) => (edgeTypes[n] = n))
+    const keys = Object.keys(edgeTypes)
+    state.edges?.forEach((e) => e.type && !keys.includes(e.type) && (edgeTypes[e.type] = e.type))
     return edgeTypes
   })
 
@@ -14,13 +16,14 @@ export default (state: FlowState): FlowGetters => {
     const nodeTypes: Record<string, any> = {
       ...defaultNodeTypes,
     }
-    state.nodeTypes?.forEach((n) => (nodeTypes[n] = n))
+    const keys = Object.keys(nodeTypes)
+    state.nodes?.forEach((n) => n.type && !keys.includes(n.type) && (nodeTypes[n.type] = n.type))
     return nodeTypes
   })
 
   const getNodes = computed<GraphNode[]>(() => {
-    if (state.isReady) {
-      const nodes = state.elements.filter((n) => isGraphNode(n) && !n.isHidden) as GraphNode[]
+    if (state.paneReady && state.dimensions.width && state.dimensions.height) {
+      const nodes = state.nodes.filter((n) => !n.hidden)
       return state.onlyRenderVisibleElements
         ? nodes &&
             getNodesInside(
@@ -40,34 +43,53 @@ export default (state: FlowState): FlowGetters => {
   })
 
   const getEdges = computed<GraphEdge[]>(() => {
-    const edges = state.elements.filter((e) => isEdge(e) && !e.isHidden) as GraphEdge[]
-    if (state.isReady) {
-      return (
-        edges
-          .map((edge) => {
-            const { sourceNode, targetNode } = getSourceTargetNodes(edge, getNodes.value)
-            if (!sourceNode) console.warn(`couldn't create edge for source id: ${edge.source}; edge id: ${edge.id}`)
-            if (!targetNode) console.warn(`couldn't create edge for target id: ${edge.target}; edge id: ${edge.id}`)
-
-            return {
-              ...edge,
-              sourceNode,
-              targetNode,
-            }
-          })
-          .filter(({ sourceNode, targetNode }) => !!(sourceNode && targetNode)) ?? []
-      )
+    if (state.paneReady && state.dimensions.width && state.dimensions.height) {
+      if (!state.onlyRenderVisibleElements) return state.edges.filter((e) => !e.hidden)
+      else
+        return state.edges.filter(
+          (e) =>
+            !e.hidden &&
+            e.sourceNode.dimensions.width &&
+            e.sourceNode.dimensions.height &&
+            e.targetNode.dimensions.width &&
+            e.targetNode.dimensions.height &&
+            isEdgeVisible({
+              sourcePos: e.sourceNode.computedPosition || { x: 0, y: 0 },
+              targetPos: e.targetNode.computedPosition || { x: 0, y: 0 },
+              sourceWidth: e.sourceNode.dimensions.width,
+              sourceHeight: e.sourceNode.dimensions.height,
+              targetWidth: e.targetNode.dimensions.width,
+              targetHeight: e.targetNode.dimensions.height,
+              width: state.dimensions.width,
+              height: state.dimensions.height,
+              transform: state.transform,
+            }),
+        )
     }
     return []
   })
 
-  const getSelectedNodes = computed<GraphNode[]>(() => state.selectedElements?.filter(isGraphNode) ?? [])
+  const getSelectedNodes: Getters['getSelectedNodes'] = computed(() => state.nodes.filter((n) => n.selected))
+  const getSelectedEdges: Getters['getSelectedEdges'] = computed(() => state.edges.filter((e) => e.selected))
+  const getSelectedElements: Getters['getSelectedElements'] = computed(() => [
+    ...(getSelectedNodes.value ?? []),
+    ...(getSelectedEdges.value ?? []),
+  ])
+
+  const nodeIds = computed(() => state.nodes.map((n) => n.id))
+  const edgeIds = computed(() => state.edges.map((e) => e.id))
+  const getNode: Getters['getNode'] = computed(() => (id: string) => state.nodes[nodeIds.value.indexOf(id)])
+  const getEdge: Getters['getEdge'] = computed(() => (id: string) => state.edges[edgeIds.value.indexOf(id)])
 
   return {
+    getNode,
+    getEdge,
     getEdgeTypes,
     getNodeTypes,
     getEdges,
     getNodes,
+    getSelectedElements,
     getSelectedNodes,
+    getSelectedEdges,
   }
 }

@@ -1,19 +1,28 @@
-import { CSSProperties } from 'vue'
-import { Edge, GraphEdge } from './edge'
-import { NodeExtent, GraphNode, TranslateExtent, Node } from './node'
-import { ConnectionLineType, ConnectionMode } from './connection'
-import { KeyCode, PanOnScrollMode } from './zoom'
-import { EdgeTypes, NodeTypes } from './components'
+import { CSSProperties, ToRefs } from 'vue'
+import { GraphEdge, Edge } from './edge'
+import { GraphNode, CoordinateExtent, Node } from './node'
+import { Connection, ConnectionLineType, ConnectionMode } from './connection'
+import { KeyCode, PanOnScrollMode, UseZoomPanHelper } from './zoom'
+import { Actions, Getters, State, FlowStore } from './store'
+import { EdgeChange, FlowHooksOn, NodeChange } from './hooks'
 
-export type ElementId = string
-export type FlowElement<T = any> = GraphNode<T> | GraphEdge<T>
-export type FlowElements<T = any> = FlowElement<T>[]
-export type Elements<T = any> = (Node<T> | Edge<T>)[]
-
-export type NextElements = {
-  nodes: GraphNode[]
-  edges: GraphEdge[]
+export type FlowElement<N = any, E = any> = GraphNode<N> | GraphEdge<E>
+export type FlowElements<N = any, E = any> = FlowElement<N, E>[]
+export interface Element<Data = any> {
+  id: string
+  label?:
+    | string
+    | {
+        props?: any
+        component: any
+      }
+  type?: string
+  data?: Data
+  class?: string
+  style?: CSSProperties
+  hidden?: boolean
 }
+export type Elements<N = any, E = any> = (Node<N> | Edge<E>)[]
 
 export type Transform = [number, number, number]
 
@@ -29,6 +38,8 @@ export interface XYPosition {
   y: number
 }
 
+export type XYZPosition = XYPosition & { z: number }
+
 export interface Dimensions {
   width: number
   height: number
@@ -43,11 +54,6 @@ export interface Rect extends Dimensions, XYPosition {}
 
 export type SnapGrid = [number, number]
 
-export enum ArrowHeadType {
-  Arrow = 'arrow',
-  ArrowClosed = 'arrowclosed',
-}
-
 export enum BackgroundVariant {
   Lines = 'lines',
   Dots = 'dots',
@@ -59,21 +65,9 @@ export interface SelectionRect extends Rect {
   draw: boolean
 }
 
-export type FitViewParams = {
-  padding?: number
-  includeHiddenNodes?: boolean
-  minZoom?: number
-  maxZoom?: number
-  offset?: {
-    x?: number
-    y?: number
-  }
-  transitionDuration?: number
-  nodes?: ElementId[]
-}
-
-export type FlowExportObject<T = any> = {
-  elements: FlowElements<T>
+export type FlowExportObject<N = any, E = N> = {
+  nodes: GraphNode<N>[]
+  edges: GraphEdge<E>[]
   position: [number, number]
   zoom: number
   maxID: number
@@ -88,26 +82,20 @@ export type FlowTransform = {
   zoom: number
 }
 
-export type FitViewFunc = (fitViewOptions?: FitViewParams) => void
-export type ProjectFunc = (position: XYPosition) => XYPosition
-export type ToObjectFunc<T = any> = () => FlowExportObject<T>
+export type ToObject<N = any, E = N> = () => FlowExportObject<N, E>
 
-export type FlowInstance<T = any> = {
-  zoomIn: () => void
-  zoomOut: () => void
-  zoomTo: (zoomLevel: number) => void
-  fitView: FitViewFunc
-  project: ProjectFunc
-  getElements: () => FlowElements<T>
-  setTransform: (transform: FlowTransform) => void
-  toObject: ToObjectFunc<T>
-}
+export type FlowInstance<N = any, E = N> = {
+  getElements: () => FlowElements<N, E>
+  getNodes: () => GraphNode<N>[]
+  getEdges: () => GraphEdge<E>[]
+  toObject: ToObject<N, E>
+} & UseZoomPanHelper
 
-export interface FlowOptions {
+export interface FlowProps<N = any, E = N> {
+  modelValue?: Elements<N, E>
+  nodes?: Node<N>[]
+  edges?: Edge<E>[]
   id?: string
-  elements?: Elements
-  nodeTypes?: NodeTypes
-  edgeTypes?: EdgeTypes
   connectionMode?: ConnectionMode
   connectionLineType?: ConnectionLineType
   connectionLineStyle?: CSSProperties
@@ -116,7 +104,7 @@ export interface FlowOptions {
   multiSelectionKeyCode?: KeyCode
   zoomActivationKeyCode?: KeyCode
   snapToGrid?: boolean
-  snapGrid?: [number, number]
+  snapGrid?: SnapGrid
   onlyRenderVisibleElements?: boolean
   edgesUpdatable?: boolean
   nodesDraggable?: boolean
@@ -128,10 +116,9 @@ export interface FlowOptions {
   maxZoom?: number
   defaultZoom?: number
   defaultPosition?: [number, number]
-  translateExtent?: TranslateExtent
-  nodeExtent?: NodeExtent
-  arrowHeadColor?: string
-  markerEndId?: string
+  translateExtent?: CoordinateExtent
+  nodeExtent?: CoordinateExtent
+  defaultMarkerColor?: string
   zoomOnScroll?: boolean
   zoomOnPinch?: boolean
   panOnScroll?: boolean
@@ -140,6 +127,67 @@ export interface FlowOptions {
   zoomOnDoubleClick?: boolean
   preventScrolling?: boolean
   edgeUpdaterRadius?: number
-  storageKey?: string
-  loading?: string
+  fitViewOnInit?: boolean
+  applyDefault?: boolean
 }
+
+export type FlowOptions<N = any, E = N> = FlowProps<N, E>
+
+export interface UseNodesStateOptions<Data = any> {
+  nodes?: Node<Data>[]
+  options?: Pick<
+    FlowOptions<Data, any>,
+    | 'applyDefault'
+    | 'snapToGrid'
+    | 'snapGrid'
+    | 'nodesConnectable'
+    | 'nodesDraggable'
+    | 'elementsSelectable'
+    | 'selectNodesOnDrag'
+    | 'defaultPosition'
+    | 'onlyRenderVisibleElements'
+    | 'nodeExtent'
+    | 'edgeUpdaterRadius'
+  >
+}
+export interface UseEdgesStateOptions<Data = any> {
+  edges?: Edge<Data>[]
+  options?: Pick<
+    FlowOptions<any, Data>,
+    | 'applyDefault'
+    | 'connectionMode'
+    | 'connectionLineType'
+    | 'connectionLineStyle'
+    | 'elementsSelectable'
+    | 'selectNodesOnDrag'
+    | 'defaultPosition'
+    | 'onlyRenderVisibleElements'
+    | 'edgesUpdatable'
+  >
+}
+export type UseElementsStateOptions = UseNodesStateOptions & UseEdgesStateOptions
+
+export type UseNodesState<N = any> = {
+  nodes: GraphNode<N>[]
+  applyNodeChanges: <ND = N>(changes: NodeChange[]) => GraphNode<ND>[]
+  setNodes: Actions['setNodes']
+  addNodes: <NA = N>(nodes: Node<NA>[], extent?: CoordinateExtent) => GraphNode<NA>[]
+  onNodesChange: FlowHooksOn['onNodesChange']
+}
+export type UseEdgesState<E = any> = {
+  edges: GraphEdge[]
+  applyEdgeChanges: <ED = E>(changes: EdgeChange[]) => GraphEdge<ED>[]
+  setEdges: Actions['setEdges']
+  addEdges: <EA = E>(params: (Edge<EA> | Connection)[]) => GraphEdge<EA>[]
+  updateEdge: <EU = E>(oldEdge: GraphEdge<EU>, newConnection: Connection) => GraphEdge<EU> | false
+  onEdgesChange: FlowHooksOn['onEdgesChange']
+}
+export type UseElementsState<N = any, E = N> = UseNodesState<N> & UseEdgesState<E>
+
+export type UseVueFlow<N = any, E = N> = {
+  id: string
+  store: FlowStore<N, E>
+} & FlowHooksOn<N, E> &
+  ToRefs<State<N, E>> &
+  Getters &
+  Actions<N, E>

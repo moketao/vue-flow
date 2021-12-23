@@ -1,42 +1,13 @@
 <script lang="ts" setup>
-import { CSSProperties } from 'vue'
-import { ArrowHeadType, EdgeProps, EdgeTextProps, ElementId, Position } from '../../types'
-import { getCenter, getMarkerEnd, getBezierPath } from './utils'
+import { Position } from '../../types/flow'
+import type { EdgeProps } from '../../types/edge'
+import { getCenter, getBezierPath } from './utils'
 import EdgeText from './EdgeText.vue'
 
-interface BezierEdgeProps extends EdgeProps {
-  id: ElementId
-  source: ElementId
-  target: ElementId
-  sourceX: number
-  sourceY: number
-  targetX: number
-  targetY: number
-  selected?: boolean
-  animated?: boolean
-  sourcePosition: Position
-  targetPosition: Position
-  label?:
-    | string
-    | {
-        component: any
-        props?: Record<string, any> & Partial<EdgeTextProps>
-      }
-  labelStyle?: CSSProperties
-  labelShowBg?: boolean
-  labelBgStyle?: CSSProperties
-  labelBgPadding?: [number, number]
-  labelBgBorderRadius?: number
-  arrowHeadType?: ArrowHeadType
-  markerEndId?: string
-  sourceHandleId?: ElementId
-  targetHandleId?: ElementId
-}
-
-const props = withDefaults(defineProps<BezierEdgeProps>(), {
+const props = withDefaults(defineProps<EdgeProps>(), {
   selected: false,
-  sourcePosition: Position.Bottom,
-  targetPosition: Position.Top,
+  sourcePosition: 'bottom' as Position,
+  targetPosition: 'top' as Position,
   labelStyle: () => ({}),
   labelShowBg: true,
   labelBgStyle: () => ({}),
@@ -54,10 +25,6 @@ const path = computed(() => {
     })
   else return ''
 })
-
-const markerEnd = computed(() => getMarkerEnd(props.arrowHeadType, props.markerEndId))
-
-const attrs = useAttrs() as Record<'style', CSSProperties>
 </script>
 <script lang="ts">
 export default {
@@ -66,17 +33,14 @@ export default {
 }
 </script>
 <template>
-  <path class="vue-flow__edge-path" :style="attrs.style" :d="path" :marker-end="markerEnd" />
-  <slot
-    :x="centered[0]"
-    :y="centered[1]"
-    :label="props.label"
-    :label-style="props.labelStyle"
-    :label-show-bg="props.labelShowBg"
-    :label-bg-style="props.labelBgStyle"
-    :label-bg-padding="props.labelBgPadding"
-    :label-bg-border-radius="props.labelBgBorderRadius"
-  >
+  <path
+    class="vue-flow__edge-path"
+    :style="props.style"
+    :d="path"
+    :marker-end="props.markerEnd"
+    :marker-start="props.markerStart"
+  />
+  <slot :x="centered[0]" :y="centered[1]" v-bind="props">
     <EdgeText
       v-if="props.label"
       :x="centered[0]"

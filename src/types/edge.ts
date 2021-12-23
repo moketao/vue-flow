@@ -1,59 +1,52 @@
 import { CSSProperties } from 'vue'
-import { ArrowHeadType, ElementId, Position } from './flow'
-import { EdgeTextProps, EdgeTypes } from './components'
+import { Position, Element } from './flow'
 import { GraphNode } from './node'
 
-export interface Edge<T = any> {
-  id: ElementId
-  type?: EdgeTypes[number]
-  source: ElementId
-  target: ElementId
-  sourceHandle?: ElementId
-  targetHandle?: ElementId
-  selected?: boolean
+export enum MarkerType {
+  Arrow = 'arrow',
+  ArrowClosed = 'arrowclosed',
+}
+
+export interface EdgeMarker {
+  type: MarkerType
+  color?: string
+  width?: number
+  height?: number
+  markerUnits?: string
+  orient?: string
+  strokeWidth?: number
+}
+
+export interface MarkerProps {
+  id: string
+  type: MarkerType
+  color?: string
+  width?: number
+  height?: number
+  markerUnits?: string
+  orient?: string
+  strokeWidth?: number
+}
+
+export type EdgeMarkerType = string | EdgeMarker
+
+export interface Edge<T = any> extends Element<T> {
+  source: string
+  target: string
+  sourceHandle?: string
+  targetHandle?: string
   sourcePosition?: Position
   targetPosition?: Position
-  label?:
-    | string
-    | {
-        component: any
-        props?: Record<string, any> & Partial<EdgeTextProps>
-      }
   labelStyle?: any
   labelShowBg?: boolean
   labelBgStyle?: any
   labelBgPadding?: [number, number]
   labelBgBorderRadius?: number
-  style?: CSSProperties | unknown
   animated?: boolean
-  arrowHeadType?: ArrowHeadType
-  markerEndId?: string
-  data?: T
-  class?: string
-  isHidden?: boolean
+  markerStart?: EdgeMarkerType
+  markerEnd?: EdgeMarkerType
   updatable?: boolean
-}
-
-export interface GraphEdge<T = any> extends Edge<T> {
-  sourceNode: GraphNode
-  targetNode: GraphNode
-}
-
-export interface EdgeProps<T = any> extends GraphEdge<T> {
-  sourceX: number
-  sourceY: number
-  targetX: number
-  targetY: number
-  selected?: boolean
-  sourcePosition: Position
-  targetPosition: Position
-  markerEndId?: string
-  sourceHandleId?: ElementId | null
-  targetHandleId?: ElementId | null
-}
-
-export interface EdgeSmoothStepProps<T = any> extends EdgeProps<T> {
-  borderRadius?: number
+  selectable?: boolean
 }
 
 export interface EdgePositions {
@@ -61,4 +54,118 @@ export interface EdgePositions {
   sourceY: number
   targetX: number
   targetY: number
+}
+
+export type GraphEdge<T = any, N = T> = Edge<T> & {
+  sourceNode: GraphNode<N>
+  targetNode: GraphNode<N>
+  selected?: boolean
+  z?: number
+} & EdgePositions
+
+export interface EdgeProps<Data = any> {
+  id: string
+  label?:
+    | string
+    | {
+        props?: any
+        component: any
+      }
+  type?: string
+  data?: Data
+  class?: string
+  style?: CSSProperties
+  hidden?: boolean
+  sourceX: number
+  sourceY: number
+  targetX: number
+  targetY: number
+  selected?: boolean
+  sourcePosition: Position
+  targetPosition: Position
+  sourceHandleId?: string
+  targetHandleId?: string
+  source: string
+  target: string
+  sourceHandle?: string
+  targetHandle?: string
+  labelStyle?: any
+  labelShowBg?: boolean
+  labelBgStyle?: any
+  labelBgPadding?: [number, number]
+  labelBgBorderRadius?: number
+  animated?: boolean
+  updatable?: boolean
+  markerStart?: string
+  markerEnd?: string
+}
+
+export interface SmoothStepEdgeProps<Data = any> extends EdgeProps<Data> {
+  id: string
+  label?:
+    | string
+    | {
+        props?: any
+        component: any
+      }
+  type?: string
+  data?: Data
+  class?: string
+  style?: CSSProperties
+  hidden?: boolean
+  sourceX: number
+  sourceY: number
+  targetX: number
+  targetY: number
+  selected?: boolean
+  sourcePosition: Position
+  targetPosition: Position
+  sourceHandleId?: string
+  targetHandleId?: string
+  source: string
+  target: string
+  sourceHandle?: string
+  targetHandle?: string
+  labelStyle?: any
+  labelShowBg?: boolean
+  labelBgStyle?: any
+  labelBgPadding?: [number, number]
+  labelBgBorderRadius?: number
+  animated?: boolean
+  updatable?: boolean
+  markerStart?: string
+  markerEnd?: string
+  borderRadius?: number
+}
+
+export interface GetCenterParams {
+  sourceX: number
+  sourceY: number
+  targetX: number
+  targetY: number
+  sourcePosition?: Position
+  targetPosition?: Position
+}
+
+export interface GetBezierPathParams {
+  sourceX: number
+  sourceY: number
+  sourcePosition?: Position
+  targetX: number
+  targetY: number
+  targetPosition?: Position
+  centerX?: number
+  centerY?: number
+}
+
+export interface GetSmoothStepPathParams {
+  sourceX: number
+  sourceY: number
+  sourcePosition?: Position
+  targetX: number
+  targetY: number
+  targetPosition?: Position
+  borderRadius?: number
+  centerX?: number
+  centerY?: number
 }

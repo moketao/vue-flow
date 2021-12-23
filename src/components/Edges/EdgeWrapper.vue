@@ -1,51 +1,47 @@
 <script lang="ts" setup>
-import { useHandle, useStore } from '../../composables'
-import { ConnectionMode, Position, EdgePositions, Dimensions, Transform, GraphEdge } from '../../types'
-import { isEdge, getEdgePositions, getHandle, isEdgeVisible } from '../../utils'
+import { useHandle, useVueFlow } from '../../composables'
+import { ConnectionMode, Position, GraphEdge, EdgeComponent } from '../../types'
+import { getEdgePositions, getHandle, getMarkerId } from '../../utils'
 import EdgeAnchor from './EdgeAnchor.vue'
 
 interface EdgeWrapper {
   edge: GraphEdge
-  component?: any
-  markerEndId?: string
-  edgeUpdaterRadius?: number
+  component?: EdgeComponent
   selectable?: boolean
   updatable?: boolean
-  dimensions: Dimensions
-  transform: Transform
 }
 
-const props = withDefaults(defineProps<EdgeWrapper>(), {})
+const props = defineProps<EdgeWrapper>()
+const emit = defineEmits(['update:edge'])
+const edge = useVModel(props, 'edge', emit)
+const { store } = useVueFlow()
 
-const store = useStore()
-
-const updating = ref<boolean>(false)
+const updating = ref(false)
 const handler = useHandle()
 
 const onEdgeClick = (event: MouseEvent) => {
-  const data = { event, edge: props.edge }
-  if (store.elementsSelectable) {
-    store.unsetNodesSelection()
-    store.addSelectedElements([props.edge])
+  const data = { event, edge: edge.value }
+  if (props.selectable) {
+    store.nodesSelectionActive = false
+    store.addSelectedEdges([edge.value])
   }
   store.hooks.edgeClick.trigger(data)
-  store.hooks.elementClick.trigger({ event, element: props.edge })
 }
-const onEdgeContextMenu = (event: MouseEvent) => store.hooks.edgeContextMenu.trigger({ event, edge: props.edge })
-const onDoubleClick = (event: MouseEvent) => store.hooks.edgeDoubleClick.trigger({ event, edge: props.edge })
-const onEdgeMouseEnter = (event: MouseEvent) => store.hooks.edgeMouseEnter.trigger({ event, edge: props.edge })
-const onEdgeMouseMove = (event: MouseEvent) => store.hooks.edgeMouseMove.trigger({ event, edge: props.edge })
-const onEdgeMouseLeave = (event: MouseEvent) => store.hooks.edgeMouseLeave.trigger({ event, edge: props.edge })
+const onEdgeContextMenu = (event: MouseEvent) => store.hooks.edgeContextMenu.trigger({ event, edge: edge.value })
+const onDoubleClick = (event: MouseEvent) => store.hooks.edgeDoubleClick.trigger({ event, edge: edge.value })
+const onEdgeMouseEnter = (event: MouseEvent) => store.hooks.edgeMouseEnter.trigger({ event, edge: edge.value })
+const onEdgeMouseMove = (event: MouseEvent) => store.hooks.edgeMouseMove.trigger({ event, edge: edge.value })
+const onEdgeMouseLeave = (event: MouseEvent) => store.hooks.edgeMouseLeave.trigger({ event, edge: edge.value })
 const onEdgeUpdaterMouseEnter = () => (updating.value = true)
 const onEdgeUpdaterMouseOut = () => (updating.value = false)
 const onEdgeUpdaterSourceMouseDown = (event: MouseEvent) => handleEdgeUpdater(event, true)
 const onEdgeUpdaterTargetMouseDown = (event: MouseEvent) => handleEdgeUpdater(event, false)
 
 const handleEdgeUpdater = (event: MouseEvent, isSourceHandle: boolean) => {
-  const nodeId = isSourceHandle ? props.edge.target : props.edge.source
-  const handleId = (isSourceHandle ? props.edge.targetHandle : props.edge.sourceHandle) ?? ''
+  const nodeId = isSourceHandle ? edge.value.target : edge.value.source
+  const handleId = (isSourceHandle ? edge.value.targetHandle : edge.value.sourceHandle) ?? ''
 
-  store.hooks.edgeUpdateStart.trigger({ event, edge: props.edge })
+  store.hooks.edgeUpdateStart.trigger({ event, edge: edge.value })
   handler(
     event,
     handleId,
@@ -53,58 +49,57 @@ const handleEdgeUpdater = (event: MouseEvent, isSourceHandle: boolean) => {
     isSourceHandle,
     undefined,
     isSourceHandle ? 'target' : 'source',
-    (connection) => store.hooks.edgeUpdate.trigger({ edge: props.edge, connection }),
-    () => store.hooks.edgeUpdateEnd.trigger({ event, edge: props.edge }),
+    (connection) => store.hooks.edgeUpdate.trigger({ edge: edge.value, connection }),
+    () => store.hooks.edgeUpdateEnd.trigger({ event, edge: edge.value }),
   )
 }
 
 // when connection type is loose we can define all handles as sources
 const targetNodeHandles = computed(() =>
   store.connectionMode === ConnectionMode.Strict
-    ? props.edge.targetNode.__vf.handleBounds.target
-    : props.edge.targetNode.__vf.handleBounds.target ?? props.edge.targetNode.__vf.handleBounds.source,
+    ? edge.value.targetNode.handleBounds.target
+    : edge.value.targetNode.handleBounds.target ?? edge.value.targetNode.handleBounds.source,
 )
-
 const sourceHandle = controlledComputed(
-  () => props.edge,
-  () => {
-    if (props.edge.sourceNode && props.edge.sourceNode.__vf.handleBounds.source)
-      return getHandle(props.edge.sourceNode.__vf.handleBounds.source, props.edge.sourceHandle)
-    else return undefined
-  },
+  () => edge.value.sourceNode.handleBounds,
+  () => getHandle(edge.value.sourceNode.handleBounds.source, edge.value.sourceHandle),
 )
-const targetHandle = computed(() => {
-  if (targetNodeHandles.value) return getHandle(targetNodeHandles.value, props.edge.targetHandle)
-  else return undefined
+const targetHandle = computed(() => getHandle(targetNodeHandles.value, edge.value.targetHandle))
+const sourcePosition = computed(() => (sourceHandle.value ? sourceHandle.value.position : Position.Bottom))
+const targetPosition = computed(() => (targetHandle.value ? targetHandle.value.position : Position.Top))
+const edgeUpdaterRadius = computed(() => store.edgeUpdaterRadius)
+
+onMounted(() => {
+  nextTick(() => {
+    watch(
+      [
+        sourcePosition,
+        targetPosition,
+        () => edge.value.sourceNode.position,
+        () => edge.value.targetNode.position,
+        () => edge.value.sourceNode.computedPosition,
+        () => edge.value.targetNode.computedPosition,
+        () => edge.value.sourceNode.dimensions,
+        () => edge.value.targetNode.dimensions,
+      ],
+      () => {
+        const { sourceX, sourceY, targetY, targetX } = getEdgePositions(
+          edge.value.sourceNode,
+          sourceHandle.value,
+          sourcePosition.value,
+          edge.value.targetNode,
+          targetHandle.value,
+          targetPosition.value,
+        )
+        if (edge.value.sourceX !== sourceX) edge.value.sourceX = sourceX
+        if (edge.value.sourceY !== sourceY) edge.value.sourceY = sourceY
+        if (edge.value.targetX !== targetX) edge.value.targetX = targetX
+        if (edge.value.targetY !== targetY) edge.value.targetY = targetY
+      },
+      { immediate: true, deep: true },
+    )
+  })
 })
-const sourcePosition = eagerComputed(() => (sourceHandle.value ? sourceHandle.value.position : Position.Bottom))
-const targetPosition = eagerComputed(() => (targetHandle.value ? targetHandle.value.position : Position.Top))
-
-const isSelected = controlledComputed(
-  () => store.selectedElements,
-  () => (props.selectable && store.selectedElements?.some((elm) => isEdge(elm) && elm.id === props.edge.id)) ?? false,
-)
-const edgePos = computed(() =>
-  getEdgePositions(
-    props.edge.sourceNode,
-    sourceHandle.value,
-    sourcePosition.value,
-    props.edge.targetNode,
-    targetHandle.value,
-    targetPosition.value,
-  ),
-)
-
-const isVisible = ({ sourceX, sourceY, targetX, targetY }: EdgePositions) =>
-  store.onlyRenderVisibleElements
-    ? isEdgeVisible({
-        sourcePos: { x: sourceX, y: sourceY },
-        targetPos: { x: targetX, y: targetY },
-        width: props.dimensions.width,
-        height: props.dimensions.height,
-        transform: props.transform,
-      })
-    : true
 </script>
 <script lang="ts">
 export default {
@@ -113,17 +108,17 @@ export default {
 </script>
 <template>
   <g
-    v-show="isVisible(edgePos)"
+    :key="`edge-${edge.id}`"
     :class="[
       'vue-flow__edge',
-      `vue-flow__edge-${props.edge.type || 'default'}`,
+      `vue-flow__edge-${edge.type || 'default'}`,
       {
-        selected: isSelected,
-        animated: props.edge.animated,
+        selected: edge.selected,
+        animated: edge.animated,
         inactive: !props.selectable,
         updating,
       },
-      props.edge.class,
+      edge.class,
     ]"
     @click="onEdgeClick"
     @dblClick="onDoubleClick"
@@ -133,65 +128,64 @@ export default {
     @mouseleave="onEdgeMouseLeave"
   >
     <slot
-      v-if="edgePos.sourceX && edgePos.sourceY && edgePos.targetX && edgePos.targetY"
       v-bind="{
-        id: props.edge.id,
-        sourceNode: props.edge.sourceNode,
-        targetNode: props.edge.targetNode,
-        source: props.edge.source,
-        target: props.edge.target,
-        selected: isSelected,
-        animated: props.edge.animated,
+        id: edge.id,
+        sourceNode: edge.sourceNode,
+        targetNode: edge.targetNode,
+        source: edge.source,
+        target: edge.target,
+        selected: edge.selected,
+        animated: edge.animated,
         updatable: props.updatable,
-        label: props.edge.label,
-        labelStyle: props.edge.labelStyle,
-        labelShowBg: props.edge.labelShowBg,
-        labelBgStyle: props.edge.labelBgStyle,
-        labelBgPadding: props.edge.labelBgPadding,
-        labelBgBorderRadius: props.edge.labelBgBorderRadius,
-        data: props.edge.data,
-        style: props.edge.style,
-        arrowHeadType: props.edge.arrowHeadType,
+        label: edge.label,
+        labelStyle: edge.labelStyle,
+        labelShowBg: edge.labelShowBg,
+        labelBgStyle: edge.labelBgStyle,
+        labelBgPadding: edge.labelBgPadding,
+        labelBgBorderRadius: edge.labelBgBorderRadius,
+        data: edge.data,
+        style: edge.style,
+        sourceX: edge.sourceX,
+        sourceY: edge.sourceY,
+        targetX: edge.targetX,
+        targetY: edge.targetY,
+        markerStart: `url(#${getMarkerId(edge.markerStart)})`,
+        markerEnd: `url(#${getMarkerId(edge.markerEnd)})`,
         sourcePosition,
         targetPosition,
-        sourceX: edgePos.sourceX,
-        sourceY: edgePos.sourceY,
-        targetX: edgePos.targetX,
-        targetY: edgePos.targetY,
-        markerEndId: props.markerEndId,
-        sourceHandleId: props.edge.sourceHandle,
-        targetHandleId: props.edge.targetHandle,
+        sourceHandleId: edge.sourceHandle,
+        targetHandleId: edge.targetHandle,
       }"
     >
       <component
-        :is="props.component ?? props.edge.type"
+        :is="props.component ?? edge.type"
         v-bind="{
-          id: props.edge.id,
-          sourceNode: props.edge.sourceNode,
-          targetNode: props.edge.targetNode,
-          source: props.edge.source,
-          target: props.edge.target,
+          id: edge.id,
+          sourceNode: edge.sourceNode,
+          targetNode: edge.targetNode,
+          source: edge.source,
+          target: edge.target,
           updatable: props.updatable,
-          selected: isSelected,
-          animated: props.edge.animated,
-          label: props.edge.label,
-          labelStyle: props.edge.labelStyle,
-          labelShowBg: props.edge.labelShowBg,
-          labelBgStyle: props.edge.labelBgStyle,
-          labelBgPadding: props.edge.labelBgPadding,
-          labelBgBorderRadius: props.edge.labelBgBorderRadius,
-          data: props.edge.data,
-          style: props.edge.style,
-          arrowHeadType: props.edge.arrowHeadType,
+          selected: edge.selected,
+          animated: edge.animated,
+          label: edge.label,
+          labelStyle: edge.labelStyle,
+          labelShowBg: edge.labelShowBg,
+          labelBgStyle: edge.labelBgStyle,
+          labelBgPadding: edge.labelBgPadding,
+          labelBgBorderRadius: edge.labelBgBorderRadius,
+          data: edge.data,
+          style: edge.style,
+          markerStart: `url(#${getMarkerId(edge.markerStart)})`,
+          markerEnd: `url(#${getMarkerId(edge.markerEnd)})`,
           sourcePosition,
           targetPosition,
-          sourceX: edgePos.sourceX,
-          sourceY: edgePos.sourceY,
-          targetX: edgePos.targetX,
-          targetY: edgePos.targetY,
-          markerEndId: props.markerEndId,
-          sourceHandleId: props.edge.sourceHandle,
-          targetHandleId: props.edge.targetHandle,
+          sourceX: edge.sourceX,
+          sourceY: edge.sourceY,
+          targetX: edge.targetX,
+          targetY: edge.targetY,
+          sourceHandleId: edge.sourceHandle,
+          targetHandleId: edge.targetHandle,
         }"
       />
     </slot>
@@ -201,12 +195,7 @@ export default {
       @mouseenter="onEdgeUpdaterMouseEnter"
       @mouseout="onEdgeUpdaterMouseOut"
     >
-      <EdgeAnchor
-        :position="sourcePosition"
-        :center-x="edgePos.sourceX"
-        :center-y="edgePos.sourceY"
-        :radius="props.edgeUpdaterRadius"
-      />
+      <EdgeAnchor :position="sourcePosition" :center-x="edge.sourceX" :center-y="edge.sourceY" :radius="edgeUpdaterRadius" />
     </g>
     <g
       v-if="props.updatable"
@@ -214,12 +203,7 @@ export default {
       @mouseenter="onEdgeUpdaterMouseEnter"
       @mouseout="onEdgeUpdaterMouseOut"
     >
-      <EdgeAnchor
-        :position="targetPosition"
-        :center-x="edgePos.targetX"
-        :center-y="edgePos.targetY"
-        :radius="props.edgeUpdaterRadius"
-      />
+      <EdgeAnchor :position="targetPosition" :center-x="edge.targetX" :center-y="edge.targetY" :radius="edgeUpdaterRadius" />
     </g>
   </g>
 </template>
