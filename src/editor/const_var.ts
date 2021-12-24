@@ -4,3 +4,4 @@ export enum nodeType{
   start = 'input',
   end = 'output',
 }
+export const flowKeyServer = 'example-flow2-server'

@@ -60,7 +60,6 @@ export function getBezierPath({
 
   let path = `M${sourceX},${sourceY} C${sourceX},${cY} ${targetX},${cY} ${targetX},${targetY}`
 
-  console.log(324);
   if (leftAndRight.includes(sourcePosition) && leftAndRight.includes(targetPosition)) {
     const dx = targetX - sourceX;
     if (dx < offsetD) {

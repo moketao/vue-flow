@@ -4,81 +4,62 @@ import CustomEdge from './CustomEdge.vue'
 import CustomEdge2 from './CustomEdge2.vue'
 import CustomLabel from './CustomLabel.vue'
 import GatewayNode from './GatewayNode.vue'
+import {selElement} from './EditorTypes'
+import EditorToolbar from "~/editor/EditorToolbar.vue";
+import { flowKeyServer, nodeType } from "~/editor/const_var";
+import { getElements } from "../../examples/EdgeTypes/utils";
 import {
-  VueFlow,
-  addEdge,
-  Connection,
-  Edge,
-  Elements,
-  removeElements,
-  isEdge,
-  ArrowHeadType,
-  FlowInstance, Node, ElementId, Position
+  VueFlow,addEdge,Connection,Edge,Elements,isEdge,FlowInstance, Node, Position, MarkerType, useElementsState, useZoomPanHelper, useVueFlow, FlowExportObject
 } from "~/index";
 import RightPanel from "./RightTabPanel/RightPanel.vue"
 import './editor.css'
-const initialElements: Elements = []
+const flowInstance = ref<FlowInstance>()
 
-const elements = ref(initialElements)
+const state = useStorage(flowKeyServer, {
+  nodes: [],
+  edges: [],
+  position: [NaN, NaN],
+  zoom: 1,
+} as FlowExportObject)
 
-import {selElement} from './EditorTypes'
-import { CSSProperties } from "vue";
-import EditorToolbar from "~/editor/EditorToolbar.vue";
-import { nodeType } from "~/editor/const_var";
-const onElementsSel = ({event: MouseEvent, node: el}) => {
-  selElement.value = el;
-}
+const { setTransform } = useZoomPanHelper()
+const { instance, dimensions,onPaneReady, onConnect, onNodeDragStart,} = useVueFlow()
+const { nodes, edges, addNodes, setNodes, setEdges,addEdges } = useElementsState()
+onPaneReady((instance) => (flowInstance.value = instance))
+onNodeDragStart((e)=>{
+  selElement.value = e.node;
+})
+// onConnect((params) => {
+//   console.log(params);
+//   if(params.source === params.target) return;
+//   // params.markerEnd = {};
+//   // params.markerEnd.type = MarkerType.ArrowClosed
+//   // params.data = {label:'title'};
+//   // params.type = 'line';
+//   addEdges([params]);
+// })
+onConnect((params) => addEdges([params]))
 const onRestore = (els: Elements,maxID:number) => {
   maxID++;
   console.log('onRestore maxID:',maxID);
   id=maxID||1;
-  elements.value = JSON.parse(
-    JSON.stringify(els),
-  )
+
+  const flow: FlowExportObject | null = state.value
+
+  if (flow) {
+    const [x = 0, y = 0] = flow.position
+    setNodes(state.value.nodes)
+    setEdges(state.value.edges)
+    setTransform({ x, y, zoom: flow.zoom || 0 })
+  }
 }
-const changeLineWidth = (e) => {
-  elements.value = elements.value.map((el:Edge) => {
-    if (isEdge(el)){
-      if(!el.style) {
-        el.style = {strokeWidth:1};
-        return el;
-      }else{
-        let style = el!.style! as CSSProperties;
-        let strokeWidth = (parseInt(style.strokeWidth+'')|1) + 1;
-        strokeWidth = strokeWidth> 2 ?1:strokeWidth;
-        style.strokeWidth = strokeWidth;
-        return {
-          ...el,
-          style: {...style, strokeWidth},
-        }
-      }
-    }else{
-      return el
-    }
-  })
-}
-const flowInstance = ref<FlowInstance>()
 let id = 1
-const getId = (): ElementId => `${id++}`
-const onConnect = (params: Edge | Connection) =>{
-  if(params.source === params.target) return;
-  params.arrowHeadType = ArrowHeadType.ArrowClosed;
-  params.data = {label:'title'};
-  params.type = 'line';
-  console.log(params);
-  addEdge(params, elements.value);
-}
+const getId = (): string => `${id++}`;
 const onDragOver = (event: DragEvent) => {
   event.preventDefault()
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = 'move'
   }
-}
-const onElementsRemove = (elementsToRemove: Elements) => {
-  return(elements.value = removeElements(elementsToRemove, elements.value))
-}
-const onLoad = (instance: FlowInstance) => {
-  return (flowInstance.value = instance)
 }
 function getCn(t){
   switch (t) {
@@ -93,7 +74,7 @@ function getCn(t){
   }
 }
 const onDrop = (event: DragEvent) => {
-  console.log('拖拽',event);
+  if (!flowInstance.value) return;
   let offX = 0;
   let offY = 0;
   const type = event.dataTransfer?.getData('application/vueflow')
@@ -105,7 +86,7 @@ const onDrop = (event: DragEvent) => {
     offY = 33;
   }
   const position = flowInstance.value!.project({ x: event.offsetX-offX, y: event.offsetY-offY })
-  let data = { label: `${getCn(type)}` };
+  let data = { label: `${getCn(type)}`, }
   switch (type) {
     case 'default':{
       //@ts-ignore
@@ -133,9 +114,10 @@ const onDrop = (event: DragEvent) => {
     sourcePosition: Position.Right,
     data: data,
   } as Node
-  elements.value.push(newNode)
+  addNodes([newNode])
 }
 let node_type = nodeType;
+const elements = getElements()
 </script>
 <template>
   <div class="EditorWrap" @drop="onDrop">
@@ -145,10 +127,6 @@ let node_type = nodeType;
       storage-key="example-flow-1233"
       :node-types="['gateway']"
       :edge-types="[node_type.line, 'custom2']"
-      @connect="onConnect"
-      @elements-remove="onElementsRemove"
-      @node-drag-stop="onElementsSel"
-      @load="onLoad"
       @dragover="onDragOver"
     >
       <template #node-gateway="props">
@@ -160,8 +138,8 @@ let node_type = nodeType;
       <template #edge-custom2="props">
         <CustomEdge2 v-bind="props" />
       </template>
-      <Controls @restore="onRestore" @lineWidth="changeLineWidth" />
     </VueFlow>
+    <Controls @restore="onRestore" />
     <RightPanel :titles="['常规设置','参与人列表','执行策略','邮件通知','高级设置','事件','执行情况']"/>
   </div>
 </template>

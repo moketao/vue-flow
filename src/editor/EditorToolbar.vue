@@ -46,5 +46,6 @@ const onDragStart = (event: DragEvent, nodeType: string) => {
   display: flex;
   align-items: center;
   padding-bottom: 1px;
+  justify-content: center;
 }
 </style>

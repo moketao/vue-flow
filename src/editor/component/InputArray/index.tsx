@@ -43,25 +43,14 @@ export default {
     // @ts-ignore
     return () => (
     // @ts-ignore
-      <NFormItem label={props.value.valueKey} style={styles}><NDynamicTags
+      <div><label>{props.value.valueKey}</label><NDynamicTags
             ref={(el) => registerRef(el, block._vid)}
             {...props.value}
             v-model:value={props.value.value}
             // rules={rules}
             on-update:value={props.value.onChange}
-      >
-        <template slot={'input'} onInput={submit}>
-          <n-auto-complete
-            size="small"
-            options={options}
-            placeholder="人员"
-            clear-after-select={true}
-            onSelect={submit}
-            modelValue={inputValueRef}
-          />
-        </template>
-      </NDynamicTags>
-      </NFormItem>
+        />
+      </div>
     )
   },
   events: [],

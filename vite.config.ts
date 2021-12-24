@@ -6,6 +6,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import replace from '@rollup/plugin-replace'
 import copy from 'rollup-plugin-copy'
 import pkg from './package.json'
+import vueTypes from 'vite-plugin-vue-type-imports'
 import vueJsx from "@vitejs/plugin-vue-jsx";
 
 // https://vitejs.dev/config/
@@ -18,6 +19,11 @@ export default defineConfig({
     },
     dedupe: ['vue'],
     extensions: ['.ts','.tsx','.vue'],
+  },
+  esbuild:{
+    jsxFactory: 'h',
+    jsxFragment: 'Fragment',
+    jsxInject: "import { Fragment } from 'vue';"
   },
   build: {
     minify: 'esbuild',
@@ -74,6 +80,11 @@ export default defineConfig({
       less:{
 
       }
+    }
+  },
+  server:{
+    fs:{
+      strict:false
     }
   }
 })

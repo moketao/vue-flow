@@ -24,7 +24,6 @@ const targetX = computed(() => (store.connectionPosition.x - store.transform[0])
 const targetY = computed(() => (store.connectionPosition.y - store.transform[1]) / store.transform[2])
 
 const dAttr = computed(() => {
-  console.log(sourceHandle);
   let path = `M${sourceX},${sourceY} ${targetX.value},${targetY.value}`
   switch (store.connectionLineType) {
     case ConnectionLineType.Bezier:

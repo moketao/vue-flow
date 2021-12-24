@@ -53,8 +53,6 @@ onMounted(async () => {
   store.d3ZoomHandler = d3ZoomHandler
   store.transform = [updatedTransform.x, updatedTransform.y, updatedTransform.k]
 
-  console.log('zoom store',store);
-
   d3z.on('start', (event: D3ZoomEvent<HTMLDivElement, any>) => {
     console.log('event.transform',event);
     if (viewChanged(transform.value, event.transform)) {

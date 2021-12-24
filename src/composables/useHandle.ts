@@ -110,7 +110,6 @@ export default (store: FlowStore = useVueFlow().store) =>
     store.hooks.connectStart.trigger({ event, nodeId, handleId, handleType })
 
     function onMouseMove(event: MouseEvent) {
-      console.log(34234);
       store.connectionPosition.x = event.clientX - containerBounds.left
       store.connectionPosition.y = event.clientY - containerBounds.top
 

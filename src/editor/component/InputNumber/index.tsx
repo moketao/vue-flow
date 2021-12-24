@@ -14,7 +14,7 @@ export default {
     const { registerRef } = useGlobalProperties()
     return () => (
     // @ts-ignore
-      <NFormItem label={props.value.valueKey} style={styles}><NInputNumber
+      <div><label>{props.value.valueKey}</label><NInputNumber
             ref={(el) => registerRef(el, block._vid)}
             {...props.value}
             type="text"
@@ -22,7 +22,7 @@ export default {
             // rules={rules}
             on-update:value={props.value.onChange}
           />
-      </NFormItem>
+      </div>
     )
   },
   events: [],

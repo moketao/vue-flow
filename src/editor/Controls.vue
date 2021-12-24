@@ -5,7 +5,6 @@ import {
   Node,
   useVueFlow,
   Position,
-  ArrowHeadType,
   Edge,
   FlowExportObjectServer
 } from "../index";
@@ -16,12 +15,13 @@ import { Add16Filled } from '@vicons/fluent'
 import { Clean } from '@vicons/carbon'
 import ControlBtn from './ControlBtn.vue'
 import './controls.css'
-import { nodeType } from "~/editor/const_var";
+import { flowKeyServer, nodeType } from "~/editor/const_var";
 
 const flowKey = 'example-flow2'
-const flowKeyServer = 'example-flow2-server'
+
 const state = useStorage(flowKey, {
-  elements: [],
+  nodes: [],
+  edges: [],
   position: [NaN, NaN],
   zoom: 1,
 } as FlowExportObject)
@@ -44,7 +44,7 @@ const onSave = () => {
   console.log('save');
   if (flow.instance) {
     let inst = flow.instance;
-    let ob = inst.toObject();
+    let ob = flow.instance.value.toObject();
     // state.value = ob;
     stateServer.value = toServerFormat(ob);
     console.log(stateServer);
@@ -56,6 +56,7 @@ function toServerFormat(_ob) {
   delete ob.position;
   delete ob.zoom;
   let output = {nodes:[],lines:[]};
+  //todo: 结构变动，github 上的老外 增加 nodes / edges ，去掉了 elements，导致此处需要修改
   ob.elements.forEach((o)=>{
     delete o.__vf;
     if(o.type===nodeType.line){
@@ -130,6 +131,22 @@ const iconBarcodeOutlined = ()=>h(BarcodeOutlined);
     <ControlBtn tip='恢复' :icon="iconRestoreTwotone" @click="onRestore" />
     <ControlBtn tip='添加' :icon="iconAdd16Filled" @click="onAdd" />
     <ControlBtn tip='清空' :icon="iconClean" @click="onClean" />
-    <ControlBtn tip='粗细' :icon="iconBarcodeOutlined" @click="emit('lineWidth')" />
   </div>
 </template>
+<style scoped>
+.EditorControls{
+  position: absolute;
+  z-index: 99;
+  display: flex;
+  left: 20%;
+}
+</style>
+<style>
+.EditorControls .n-button{
+  margin: 5px;
+}
+.EditorControls .n-form-item{
+  --label-height:5px !important;
+  --feedback-height:6px !important;
+}
+</style>
