@@ -9,7 +9,21 @@ import EditorToolbar from "~/editor/EditorToolbar.vue";
 import { flowKeyServer, nodeType } from "~/editor/const_var";
 import { getElements } from "../../examples/EdgeTypes/utils";
 import {
-  VueFlow,addEdge,Connection,Edge,Elements,isEdge,FlowInstance, Node, Position, MarkerType, useElementsState, useZoomPanHelper, useVueFlow, FlowExportObject
+  VueFlow,
+  addEdge,
+  Connection,
+  Edge,
+  Elements,
+  isEdge,
+  FlowInstance,
+  Node,
+  Position,
+  MarkerType,
+  useElementsState,
+  useZoomPanHelper,
+  useVueFlow,
+  FlowExportObject,
+  FlowExportObjectServer
 } from "~/index";
 import RightPanel from "./RightTabPanel/RightPanel.vue"
 import './editor.css'
@@ -20,6 +34,7 @@ const state = useStorage(flowKeyServer, {
   edges: [],
   position: [NaN, NaN],
   zoom: 1,
+  maxID:0,
 } as FlowExportObject)
 
 const { setTransform } = useZoomPanHelper()
@@ -39,18 +54,20 @@ onNodeDragStart((e)=>{
 //   addEdges([params]);
 // })
 onConnect((params) => addEdges([params]))
-const onRestore = (els: Elements,maxID:number) => {
+const onRestore = (f:any) => {
+
+  const flow: FlowExportObjectServer | null = state.value
+  console.log(flow);
+  let maxID = flow?.maxID||1;
   maxID++;
   console.log('onRestore maxID:',maxID);
-  id=maxID||1;
-
-  const flow: FlowExportObject | null = state.value
+  id=maxID;
 
   if (flow) {
-    const [x = 0, y = 0] = flow.position
-    setNodes(state.value.nodes)
-    setEdges(state.value.edges)
-    setTransform({ x, y, zoom: flow.zoom || 0 })
+    flow.position = [0, 0];
+    setNodes(flow.nodes)
+    setEdges(flow.lines)
+    setTransform({ x:0, y:0, zoom: flow.zoom || 0 })
   }
 }
 let id = 1

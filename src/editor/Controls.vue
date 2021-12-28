@@ -1,13 +1,5 @@
 <script lang="ts" setup>
-import {
-  useZoomPanHelper,
-  FlowExportObject,
-  Node,
-  useVueFlow,
-  Position,
-  Edge,
-  FlowExportObjectServer
-} from "../index";
+import { useZoomPanHelper,FlowExportObject,Node,useVueFlow,Position,Edge,FlowExportObjectServer } from "../index";
 import { NIcon, NSpace, NCard, NButton, NTooltip} from 'naive-ui'
 import { SaveTwotone, BarcodeOutlined } from '@vicons/antd'
 import { RestoreTwotone } from '@vicons/material'
@@ -24,6 +16,7 @@ const state = useStorage(flowKey, {
   edges: [],
   position: [NaN, NaN],
   zoom: 1,
+  maxID:0,
 } as FlowExportObject)
 
 const stateServer = useStorage(flowKeyServer, {
@@ -35,7 +28,7 @@ const stateServer = useStorage(flowKeyServer, {
 
 const getNodeId = () => `randomnode_${+new Date()}`
 
-const { transform } = useZoomPanHelper()
+const { setTransform } = useZoomPanHelper()
 
 const flow = useVueFlow()
 const emit = defineEmits(['restore', 'add','lineWidth'])
@@ -55,38 +48,37 @@ function toServerFormat(_ob) {
   let ob = JSON.parse( JSON.stringify(_ob) );
   delete ob.position;
   delete ob.zoom;
-  let output = {nodes:[],lines:[]};
+  let output = {nodes:[],lines:[]} as any;
   //todo: 结构变动，github 上的老外 增加 nodes / edges ，去掉了 elements，导致此处需要修改
-  ob.elements.forEach((o)=>{
+  ob.nodes.forEach((o)=>{
     delete o.__vf;
-    if(o.type===nodeType.line){
-      delete o.sourceNode;
-      delete o.targetNode;
-      output.lines.push(o);
-    }else {
-      output.nodes.push(o);
-    }
+    output.nodes.push(o);
+  })
+  ob.edges.forEach((o)=>{
+    delete o.__vf;
+    delete o.sourceNode;
+    delete o.targetNode;
+    output.lines.push(o);
   })
   console.log(output);
-
   return output;
 }
 function fromServerFormat() {
   // let ob = JSON.parse( JSON.stringify(toRaw(unref(stateServer.value))) );
   let ob = JSON.parse( JSON.stringify(stateServer.value) );
-  let output:FlowExportObject = {elements:[],position:[0,0],zoom:1,maxID:0};
+  let output:FlowExportObject = {nodes:[],edges:[],position:[0,0],zoom:1,maxID:0};
   console.log(ob);
   let dic = new Map<string,any>()
   ob.nodes.forEach((o)=>{
     if(parseInt(o.id)>=output.maxID)output.maxID=parseInt(o.id);
     dic.set(o.id,o)
-    output.elements.push(o);
+    output.nodes.push(o);
   })
   ob.lines.forEach((o)=>{
     if(parseInt(o.id)>=output.maxID)output.maxID=parseInt(o.id);
     o.sourceNode = dic.get(o.source)
     o.targetNode = dic.get(o.target)
-    output.elements.push(o);
+    output.edges.push(o);
   })
   console.log(output);
   return output;
@@ -98,8 +90,8 @@ const onRestore = () => {
   if (flow) {
     flow.position = [0,0];
     const [x = 0, y = 0] = flow.position
-    emit('restore', flow.elements ?? [],flow.maxID)
-    transform({ x, y, zoom: flow.zoom || 0 })
+    emit('restore', flow)
+    setTransform({ x, y, zoom: flow.zoom || 0 })
   }
 }
 
@@ -139,6 +131,8 @@ const iconBarcodeOutlined = ()=>h(BarcodeOutlined);
   z-index: 99;
   display: flex;
   left: 20%;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 3px;
 }
 </style>
 <style>
