@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { getBezierPath, Position, EdgeProps } from '~/index'
+import { getBezierPath, Position, EdgeProps } from "~/index";
 import { getMarkerEnd } from "~/components/Edges/utils";
 
 interface CustomEdgeProps<T = { text: string }> extends EdgeProps<T> {

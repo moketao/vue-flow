@@ -7,23 +7,23 @@ import GatewayNode from './GatewayNode.vue'
 import {selElement} from './EditorTypes'
 import EditorToolbar from "~/editor/EditorToolbar.vue";
 import { flowKeyServer, nodeType } from "~/editor/const_var";
-import { getElements } from "../../examples/EdgeTypes/utils";
 import {
   VueFlow,
   addEdge,
-  Connection,
   Edge,
   Elements,
-  isEdge,
   FlowInstance,
   Node,
   Position,
-  MarkerType,
   useElementsState,
   useZoomPanHelper,
   useVueFlow,
   FlowExportObject,
-  FlowExportObjectServer, getConnectedEdges, NodeChange, EdgeChange
+  FlowExportObjectServer,
+  getConnectedEdges,
+  NodeChange,
+  EdgeChange,
+  FlowEvents, isNode
 } from "~/index";
 import RightPanel from "./RightTabPanel/RightPanel.vue"
 import './editor.css'
@@ -69,19 +69,23 @@ const selectAll = () => {
   nodesSelectionActive.value = true
 }
 onMounted(()=>{
+  store.elementsSelectable = true;
   useKeyPress(store.deleteKeyCode, doDel)
   useKeyPress(store.multiSelectionKeyCode, (keyPressed) => {
     store.multiSelectionActive = keyPressed
   })
 
   useKeyPress(store.selectionKeyCode, (keyPressed) => {
-    store.selectionActive =
-      store.selectionActive === true && keyPressed ? true : keyPressed && (store.selectionActive || store.elementsSelectable)
+    store.selectionActive = store.selectionActive === true && keyPressed ? true : keyPressed && (store.selectionActive || store.elementsSelectable)
   })
 })
-onConnect((params) => addEdges([params]))
+onConnect((params) => {
+  if(!params.data)params.data = {label:'tilte'}
+  params.type = node_type.line;
+  params.selectable = true;
+  return addEdges([params])
+});
 const onRestore = (f:any) => {
-
   const flow: FlowExportObjectServer | null = state.value
   console.log(flow);
   console.log(f.maxID);
@@ -161,12 +165,18 @@ const onDrop = (event: DragEvent) => {
 }
 let node_type = nodeType;
 const elements = []
+const onElementClick = ({ element }: FlowEvents['elementClick']) => {
+  console.log(`${isNode(element) ? 'node' : 'edge'} click:`, element)
+}
+const onSelectionChange = (elements: FlowEvents['selectionChange']) => console.log('selection change', elements)
 </script>
 <template>
   <div class="EditorWrap" @drop="onDrop">
     <EditorToolbar class="aside" />
     <VueFlow
       v-model="elements"
+      @element-click="onElementClick"
+      @selection-change="onSelectionChange"
       storage-key="example-flow-1233"
       :node-types="['gateway']"
       :edge-types="[node_type.line, 'custom2']"
