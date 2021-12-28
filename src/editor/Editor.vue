@@ -23,10 +23,11 @@ import {
   useZoomPanHelper,
   useVueFlow,
   FlowExportObject,
-  FlowExportObjectServer
+  FlowExportObjectServer, getConnectedEdges, NodeChange, EdgeChange
 } from "~/index";
 import RightPanel from "./RightTabPanel/RightPanel.vue"
 import './editor.css'
+import { useKeyPress } from "~/composables";
 const flowInstance = ref<FlowInstance>()
 
 const state = useStorage(flowKeyServer, {
@@ -38,21 +39,46 @@ const state = useStorage(flowKeyServer, {
 } as FlowExportObject)
 
 const { setTransform } = useZoomPanHelper()
-const { instance, dimensions,onPaneReady, onConnect, onNodeDragStart,} = useVueFlow()
+const { instance, dimensions,onPaneReady,addSelectedNodes,nodesSelectionActive,getNodes, onConnect, onNodeDragStart,store} = useVueFlow()
 const { nodes, edges, addNodes, setNodes, setEdges,addEdges } = useElementsState()
 onPaneReady((instance) => (flowInstance.value = instance))
 onNodeDragStart((e)=>{
   selElement.value = e.node;
 })
-// onConnect((params) => {
-//   console.log(params);
-//   if(params.source === params.target) return;
-//   // params.markerEnd = {};
-//   // params.markerEnd.type = MarkerType.ArrowClosed
-//   // params.data = {label:'title'};
-//   // params.type = 'line';
-//   addEdges([params]);
-// })
+const doDel = (keyPressed) => {
+  const selectedNodes = store.getSelectedNodes
+  const selectedEdges = store.getSelectedEdges
+  if (keyPressed && (selectedNodes || selectedEdges)) {
+    const connectedEdges = (selectedNodes && getConnectedEdges(selectedNodes, store.edges)) ?? []
+
+    const nodeChanges: NodeChange[] = selectedNodes.map((n) => ({ id: n.id, type: 'remove' }))
+    const edgeChanges: EdgeChange[] = [...selectedEdges, ...connectedEdges].map((e) => ({
+      id: e.id,
+      type: 'remove',
+    }))
+
+    store.hooks.nodesChange.trigger(nodeChanges)
+    store.hooks.edgesChange.trigger(edgeChanges)
+    store.nodesSelectionActive = false
+
+    store.resetSelectedElements()
+  }
+}
+const selectAll = () => {
+  addSelectedNodes(getNodes.value)
+  nodesSelectionActive.value = true
+}
+onMounted(()=>{
+  useKeyPress(store.deleteKeyCode, doDel)
+  useKeyPress(store.multiSelectionKeyCode, (keyPressed) => {
+    store.multiSelectionActive = keyPressed
+  })
+
+  useKeyPress(store.selectionKeyCode, (keyPressed) => {
+    store.selectionActive =
+      store.selectionActive === true && keyPressed ? true : keyPressed && (store.selectionActive || store.elementsSelectable)
+  })
+})
 onConnect((params) => addEdges([params]))
 const onRestore = (f:any) => {
 
@@ -156,7 +182,7 @@ const elements = []
         <CustomEdge2 v-bind="props" />
       </template>
     </VueFlow>
-    <Controls @restore="onRestore" />
+    <Controls @restore="onRestore" @del="doDel(true)" @selAll="selectAll" />
     <RightPanel :titles="['常规设置','参与人列表','执行策略','邮件通知','高级设置','事件','执行情况']"/>
   </div>
 </template>

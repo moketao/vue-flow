@@ -29,6 +29,9 @@ const onDragStart = (event: DragEvent, nodeType: string) => {
   padding: 15px 10px;
   font-size: 12px;
   background: #fcfcfc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .aside > * {

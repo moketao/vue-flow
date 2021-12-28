@@ -17,6 +17,7 @@ export const applyChanges = <
   changes: C[],
   elements: T[],
 ): T[] => {
+  console.log('改变发生：',changes,elements);
   let elementIds = elements.map((el) => el.id)
   changes.forEach((change) => {
     const i = elementIds.indexOf(change.id)

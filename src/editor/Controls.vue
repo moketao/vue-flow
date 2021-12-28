@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { useZoomPanHelper,FlowExportObject,Node,useVueFlow,Position,Edge,FlowExportObjectServer } from "../index";
 import { NIcon, NSpace, NCard, NButton, NTooltip} from 'naive-ui'
-import { SaveTwotone, BarcodeOutlined } from '@vicons/antd'
+import { SaveTwotone ,DeleteTwotone } from '@vicons/antd'
+import { SelectAllOn24Regular } from '@vicons/fluent'
 import { RestoreTwotone } from '@vicons/material'
 import { Add16Filled } from '@vicons/fluent'
 import { Clean } from '@vicons/carbon'
@@ -31,7 +32,7 @@ const getNodeId = () => `randomnode_${+new Date()}`
 const { setTransform } = useZoomPanHelper()
 
 const flow = useVueFlow()
-const emit = defineEmits(['restore', 'add','lineWidth'])
+const emit = defineEmits(['restore','selAll', 'del','lineWidth'])
 
 const onSave = () => {
   console.log('save');
@@ -96,17 +97,12 @@ const onRestore = () => {
   }
 }
 
-const onAdd = () => {
-  const newNode = {
-    id: `random_node-${getNodeId()}`,
-    data: { label: 'Added node' },
-    position: { x: Math.random() * (window.innerWidth - 200)+100, y: Math.random() * (window.innerHeight - 200)+100 },
-    targetPosition: Position.Left,
-    sourcePosition: Position.Right,
-  } as Node
-  flow.addElements([newNode])
+const onDelOne =()=>{
+  emit('del')
 }
-
+const selAll =()=>{
+  emit('selAll')
+}
 function onClean(){
   if (flow) {
     flow.setElements([],true);
@@ -114,16 +110,17 @@ function onClean(){
 }
 const iconSave = ()=>h(SaveTwotone);
 const iconRestoreTwotone = ()=>h(RestoreTwotone);
-const iconAdd16Filled = ()=>h(Add16Filled);
 const iconClean = ()=>h(Clean);
-const iconBarcodeOutlined = ()=>h(BarcodeOutlined);
+const iconDeleteTwotone = ()=>h(DeleteTwotone);
+const iconSelectAllOn24Regular = ()=>h(SelectAllOn24Regular);
 </script>
 <template>
   <div class="EditorControls">
     <ControlBtn tip='保存' :icon="iconSave" @click="onSave" />
     <ControlBtn tip='恢复' :icon="iconRestoreTwotone" @click="onRestore" />
-    <ControlBtn tip='添加' :icon="iconAdd16Filled" @click="onAdd" />
-    <ControlBtn tip='清空' :icon="iconClean" @click="onClean" />
+    <ControlBtn tip='全选' :icon="iconSelectAllOn24Regular" @click="selAll" />
+    <ControlBtn tip='删除单个' :icon="iconDeleteTwotone" @click="onDelOne" />
+    <ControlBtn tip='清空所有' :icon="iconClean" @click="onClean" />
   </div>
 </template>
 <style scoped>

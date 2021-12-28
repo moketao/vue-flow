@@ -88,9 +88,9 @@ export default (opts?: FlowOptions): State => {
     selectNodesOnDrag: true,
     multiSelectionActive: false,
     selectionKeyCode: 'Shift',
-    multiSelectionKeyCode: 'Meta',
+    multiSelectionKeyCode: 'Alt',
     zoomActivationKeyCode: 'Meta',
-    deleteKeyCode: 'Backspace',
+    deleteKeyCode: 'Delete',
 
     hooks: createHooks(),
 
