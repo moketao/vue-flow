@@ -58,8 +58,8 @@ const onRestore = (f:any) => {
 
   const flow: FlowExportObjectServer | null = state.value
   console.log(flow);
-  let maxID = flow?.maxID||1;
-  maxID++;
+  console.log(f.maxID);
+  let maxID = f.maxID||flow?.maxID||1;
   console.log('onRestore maxID:',maxID);
   id=maxID;
 
@@ -134,7 +134,7 @@ const onDrop = (event: DragEvent) => {
   addNodes([newNode])
 }
 let node_type = nodeType;
-const elements = getElements()
+const elements = []
 </script>
 <template>
   <div class="EditorWrap" @drop="onDrop">

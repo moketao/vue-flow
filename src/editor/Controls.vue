@@ -80,6 +80,7 @@ function fromServerFormat() {
     o.targetNode = dic.get(o.target)
     output.edges.push(o);
   })
+  output.maxID++;
   console.log(output);
   return output;
 }
