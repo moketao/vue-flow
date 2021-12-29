@@ -90,7 +90,6 @@ onConnect((params) => {
   return addEdges([params])
 });
 const onRestore = (f:any) => {
-  console.log('来了',f);
   let maxID = f.maxID||1;
   id=maxID;
 

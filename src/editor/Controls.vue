@@ -82,7 +82,6 @@ function fromServerFormat() {
     output.edges.push(o);
   })
   output.maxID++;
-  console.log('output::',output);
   return output;
 }
 const onRestore = () => {
