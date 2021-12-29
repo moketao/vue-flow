@@ -1,7 +1,9 @@
 <script lang="ts" setup>
-import { getBezierPath, Position, EdgeProps } from "~/index";
+import { getBezierPath, Position, EdgeProps, useVueFlow, applyEdgeChanges } from "~/index";
 import { getMarkerEnd } from "~/components/Edges/utils";
-
+import { applyChanges } from "~/utils";
+import { selElement } from "~/editor/EditorTypes";
+const { addSelectedNodes,nodesSelectionActive,store} = useVueFlow()
 interface CustomEdgeProps<T = { text: string }> extends EdgeProps<T> {
   source: string
   target: string
@@ -30,6 +32,10 @@ const edgePath = computed(() =>
   }),
 )
 const markerEnd = computed(() => getMarkerEnd(props.arrowHeadType, props.markerEndId))
+const onClick = () => {
+  selElement.value = props;
+  applyEdgeChanges([{id:props.id,type:'select',selected:true}],store.edges)
+}
 </script>
 <script lang="ts">
 export default {
@@ -39,14 +45,14 @@ export default {
 <template>
   <path :id="props.id" class="vue-flow__edge-path" :d="edgePath" :marker-end="markerEnd" />
   <text>
-    <textPath :href="`#${props.id}`" :style="{ fontSize: '12px' }" startOffset="50%" text-anchor="middle">
+    <textPath @click="onClick" :href="`#${props.id}`" :style="{ fontSize: '12px' }" startOffset="50%" text-anchor="middle">
       {{ props.data.label }}
     </textPath>
   </text>
 </template>
 <style scoped>
 .vue-flow__edge-path{
-  stroke-width: 2;
+  stroke-width: 3;
   stroke:#000;
 }
 </style>

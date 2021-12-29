@@ -22,11 +22,16 @@ import RightTab from "./RightTab.vue";
 import { selElement } from "~/editor/EditorTypes";
 import { Edge } from "~/types";
 import { ComputedRef } from "vue";
-
+import { isEdge, isNode } from "~/utils";
+import { applyEdgeChanges, applyNodeChanges } from "~/composables";
+import { useVueFlow } from "~/index";
+import { clearOldSel } from "~/editor/Utils";
+const { store} = useVueFlow()
 let comList = ref<ComputedRef[]>([]);
 let comList2 = ref<ComputedRef[]>([]);
 watch(()=>selElement.value,(v, oldValue, onInvalidate)=>{
   let data = (v as Edge)!.data;
+  clearOldSel(oldValue,store);
   if(!data) return;
   comList.value.splice(0,comList.value.length);
   comList2.value.splice(0,comList2.value.length);

@@ -23,7 +23,7 @@ import {
   getConnectedEdges,
   NodeChange,
   EdgeChange,
-  FlowEvents, isNode
+  FlowEvents, isNode, applyEdgeChanges
 } from "~/index";
 import RightPanel from "./RightTabPanel/RightPanel.vue"
 import './editor.css'
@@ -32,11 +32,11 @@ const flowInstance = ref<FlowInstance>()
 
 const state = useStorage(flowKeyServer, {
   nodes: [],
-  edges: [],
+  lines: [],
   position: [NaN, NaN],
   zoom: 1,
   maxID:0,
-} as FlowExportObject)
+} as FlowExportObjectServer)
 
 const { setTransform } = useZoomPanHelper()
 const { instance, dimensions,onPaneReady,addSelectedNodes,nodesSelectionActive,getNodes, onConnect, onNodeDragStart,store} = useVueFlow()
@@ -45,6 +45,10 @@ onPaneReady((instance) => (flowInstance.value = instance))
 onNodeDragStart((e)=>{
   selElement.value = e.node;
 })
+const onEdgeClick = (e) => {
+  selElement.value = e.edge;
+  applyEdgeChanges([{id:e.edge.id,type:'select',selected:true}],store.edges)
+}
 const doDel = (keyPressed) => {
   const selectedNodes = store.getSelectedNodes
   const selectedEdges = store.getSelectedEdges
@@ -86,19 +90,14 @@ onConnect((params) => {
   return addEdges([params])
 });
 const onRestore = (f:any) => {
-  const flow: FlowExportObjectServer | null = state.value
-  console.log(flow);
-  console.log(f.maxID);
-  let maxID = f.maxID||flow?.maxID||1;
-  console.log('onRestore maxID:',maxID);
+  console.log('来了',f);
+  let maxID = f.maxID||1;
   id=maxID;
 
-  if (flow) {
-    flow.position = [0, 0];
-    setNodes(flow.nodes)
-    setEdges(flow.lines)
-    setTransform({ x:0, y:0, zoom: flow.zoom || 0 })
-  }
+  f.position = [0, 0];
+  setNodes(f.nodes)
+  setEdges(f.edges)
+  setTransform({ x:0, y:0, zoom: f.zoom || 0 })
 }
 let id = 1
 const getId = (): string => `${id++}`;
@@ -165,18 +164,13 @@ const onDrop = (event: DragEvent) => {
 }
 let node_type = nodeType;
 const elements = []
-const onElementClick = ({ element }: FlowEvents['elementClick']) => {
-  console.log(`${isNode(element) ? 'node' : 'edge'} click:`, element)
-}
-const onSelectionChange = (elements: FlowEvents['selectionChange']) => console.log('selection change', elements)
 </script>
 <template>
   <div class="EditorWrap" @drop="onDrop">
     <EditorToolbar class="aside" />
     <VueFlow
       v-model="elements"
-      @element-click="onElementClick"
-      @selection-change="onSelectionChange"
+      @edgeClick="onEdgeClick"
       storage-key="example-flow-1233"
       :node-types="['gateway']"
       :edge-types="[node_type.line, 'custom2']"

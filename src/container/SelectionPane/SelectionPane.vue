@@ -10,7 +10,7 @@ const { id, store } = useVueFlow()
 const onClick = (event: MouseEvent) => {
   store.hooks.paneClick.trigger(event)
   store.nodesSelectionActive = false
-  store.resetSelectedElements()
+  store.resetSelectedElements(store)
 }
 
 const onContextMenu = (event: MouseEvent) => store.hooks.paneContextMenu.trigger(event)

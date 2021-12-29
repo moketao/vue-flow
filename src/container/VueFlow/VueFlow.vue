@@ -44,7 +44,9 @@ const { modelValue, nodes, edges } = useVModels(props, emit)
 
 if (applyDefault.value) {
   onNodesChange((c) => applyNodeChanges(c, storedNodes.value))
-  onEdgesChange((c) => applyEdgeChanges(c, storedEdges.value))
+  onEdgesChange((c) => {
+    return applyEdgeChanges(c, storedEdges.value)
+  })
 }
 if (props.modelValue && !storedNodes.value.length) setElements(props.modelValue)
 if (props.nodes && !storedNodes.value.length) setNodes(props.nodes)

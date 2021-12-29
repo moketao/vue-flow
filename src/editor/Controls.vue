@@ -24,6 +24,8 @@ const stateServer = useStorage(flowKeyServer, {
   nodes: [],
   lines: [],
   position: [NaN, NaN],
+  zoom: 1,
+  maxID:0,
 } as FlowExportObjectServer)
 
 
@@ -39,7 +41,7 @@ const onSave = () => {
   if (flow.instance) {
     let inst = flow.instance;
     let ob = flow.instance.value.toObject();
-    // state.value = ob;
+    state.value = ob;
     stateServer.value = toServerFormat(ob);
     console.log(stateServer);
   }
@@ -61,14 +63,12 @@ function toServerFormat(_ob) {
     delete o.targetNode;
     output.lines.push(o);
   })
-  console.log(output);
   return output;
 }
 function fromServerFormat() {
   // let ob = JSON.parse( JSON.stringify(toRaw(unref(stateServer.value))) );
   let ob = JSON.parse( JSON.stringify(stateServer.value) );
   let output:FlowExportObject = {nodes:[],edges:[],position:[0,0],zoom:1,maxID:0};
-  console.log(ob);
   let dic = new Map<string,any>()
   ob.nodes.forEach((o)=>{
     if(parseInt(o.id)>=output.maxID)output.maxID=parseInt(o.id);
@@ -82,13 +82,12 @@ function fromServerFormat() {
     output.edges.push(o);
   })
   output.maxID++;
-  console.log(output);
+  console.log('output::',output);
   return output;
 }
 const onRestore = () => {
   // const flow: FlowExportObject | null = state.value
   const flow: FlowExportObject | null = fromServerFormat();
-  console.log('onRestore',flow);
   if (flow) {
     flow.position = [0,0];
     const [x = 0, y = 0] = flow.position

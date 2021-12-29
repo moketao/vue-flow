@@ -80,7 +80,7 @@ export interface Actions<N = any, E = N> {
   setMinZoom: (zoom: number) => void
   setMaxZoom: (zoom: number) => void
   setTranslateExtent: (translateExtent: CoordinateExtent) => void
-  resetSelectedElements: () => void
+  resetSelectedElements: (store?) => void
   setConnectionNodeId: (payload: SetConnectionId) => void
   setInteractive: (isInteractive: boolean) => void
   setState: (state: Partial<FlowOptions<N, E>>) => void

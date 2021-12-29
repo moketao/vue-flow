@@ -11,6 +11,7 @@ import {
   parseEdge,
   parseNode,
 } from '~/utils'
+import { clearOldSel } from "~/editor/Utils";
 
 const getParent = (root: Node[], id: string): GraphNode | undefined => {
   let node
@@ -92,9 +93,10 @@ export default (state: State, getters: Getters): Actions => {
     state.d3Zoom?.translateExtent(translateExtent)
     state.translateExtent = translateExtent
   }
-  const resetSelectedElements: Actions['resetSelectedElements'] = () => {
+  const resetSelectedElements: Actions['resetSelectedElements'] = (store?) => {
     addSelectedNodes([])
     addSelectedEdges([])
+    clearOldSel(null,store);
   }
   const setConnectionNodeId: Actions['setConnectionNodeId'] = ({
     connectionHandleId,

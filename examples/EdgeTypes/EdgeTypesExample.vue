@@ -4,7 +4,6 @@ import { VueFlow, MiniMap, Controls, Background, FlowInstance } from '~/index'
 
 const onLoad = (flowInstance: FlowInstance) => {
   flowInstance.fitView()
-  console.log(flowInstance.getElements())
 }
 
 const elements = getElements()
